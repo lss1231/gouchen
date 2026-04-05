@@ -1,88 +1,123 @@
-"""Schema RAG using Chroma for table retrieval."""
+"""Schema RAG using keyword-based retrieval for MVP."""
 import json
+import re
 from pathlib import Path
 from typing import List
 
-from langchain_chroma import Chroma
-from langchain_core.documents import Document
-from langchain_openai import OpenAIEmbeddings
-
-from src.config import get_settings
-from src.models import TableMetadata
+from ..models import TableMetadata
 
 
 class SchemaStore:
-    """Vector store for schema metadata retrieval."""
+    """Simple keyword-based schema store for MVP.
+
+    Uses keyword matching instead of embeddings for simplicity.
+    In production, switch to vector embeddings.
+    """
 
     def __init__(self):
-        settings = get_settings()
-        self.embeddings = OpenAIEmbeddings(
-            api_key=settings.llm_api_key,
-            base_url=settings.llm_base_url,
-            model="text-embedding-ada-002",
-        )
-        self.vectorstore = Chroma(
-            collection_name="gouchen_schema",
-            embedding_function=self.embeddings,
-            client_settings={"chroma_server_host": settings.chroma_host,
-                           "chroma_server_http_port": settings.chroma_port},
-        )
-
-    def _table_to_document(self, table: TableMetadata) -> Document:
-        """Convert table metadata to Document for indexing."""
-        content_parts = [
-            f"表名: {table.table_name}",
-            f"中文名: {table.table_cn_name}",
-            f"描述: {table.description}",
-            f"数据源: {table.datasource}",
-            "字段列表:",
-        ]
-
-        for field in table.fields:
-            content_parts.append(
-                f"  - {field['field_name']} ({field['field_cn_name']}): "
-                f"{field['data_type']} - {field['description']}"
-            )
-
-        content = "\n".join(content_parts)
-
-        return Document(
-            page_content=content,
-            metadata={
-                "table_name": table.table_name,
-                "table_cn_name": table.table_cn_name,
-                "datasource": table.datasource,
-            }
-        )
+        self._tables: List[TableMetadata] = []
 
     def index_tables(self, tables: List[TableMetadata]) -> None:
-        """Index tables to vector store."""
-        documents = [self._table_to_document(t) for t in tables]
+        """Index tables."""
+        self._tables = tables
 
-        # Clear existing and add new
-        self.vectorstore.delete_collection()
-        self.vectorstore = Chroma(
-            collection_name="gouchen_schema",
-            embedding_function=self.embeddings,
-            client_settings={"chroma_server_host": get_settings().chroma_host,
-                           "chroma_server_http_port": get_settings().chroma_port},
-        )
-        self.vectorstore.add_documents(documents)
+    def _score_table(self, table: TableMetadata, keywords: List[str]) -> float:
+        """Score a table based on keyword matches."""
+        score = 0.0
+
+        # Build searchable text
+        texts = [
+            table.table_name.lower(),
+            table.table_cn_name.lower(),
+            table.description.lower(),
+        ]
+        for field in table.fields:
+            texts.append(field['field_name'].lower())
+            texts.append(field['field_cn_name'].lower())
+            texts.append(field['description'].lower())
+
+        searchable_text = ' '.join(texts)
+
+        # Score based on keyword matches
+        for keyword in keywords:
+            keyword = keyword.lower()
+            if keyword in searchable_text:
+                # Higher score for table name matches
+                if keyword in table.table_name.lower() or keyword in table.table_cn_name.lower():
+                    score += 3.0
+                else:
+                    score += 1.0
+
+        return score
 
     def retrieve(self, query: str, top_k: int = 3) -> List[TableMetadata]:
-        """Retrieve relevant tables for query."""
-        results = self.vectorstore.similarity_search(query, k=top_k)
+        """Retrieve relevant tables for query using keyword matching."""
+        # Extract keywords from query
+        keywords = self._extract_keywords(query)
 
-        tables = []
-        for doc in results:
-            tables.append(TableMetadata(
-                table_name=doc.metadata["table_name"],
-                table_cn_name=doc.metadata["table_cn_name"],
-                description="",
-                datasource=doc.metadata["datasource"],
-                fields=[]
-            ))
-        return tables
+        # Score all tables
+        scored_tables = [
+            (table, self._score_table(table, keywords))
+            for table in self._tables
+        ]
+
+        # Sort by score and return top_k
+        scored_tables.sort(key=lambda x: x[1], reverse=True)
+
+        return [table for table, score in scored_tables[:top_k] if score > 0]
+
+    def _extract_keywords(self, query: str) -> List[str]:
+        """Extract keywords from query."""
+        # Common business terms mapping
+        term_mapping = {
+            # Metrics
+            '销售额': ['order', 'amount', 'sales', 'paid', '金额'],
+            '销售': ['order', 'sales', 'amount'],
+            '订单': ['order'],
+            '收入': ['amount', 'paid'],
+            'gmv': ['order', 'amount'],
+
+            # Dimensions
+            '时间': ['date', 'time'],
+            '日期': ['date'],
+            '今天': ['date'],
+            '昨天': ['date'],
+            '上周': ['date', 'week'],
+            '本月': ['date', 'month'],
+            '上个月': ['date', 'month'],
+
+            '地区': ['region', 'area', 'province'],
+            '省份': ['region', 'province'],
+            '城市': ['region', 'city'],
+            '华东': ['region'],
+            '华北': ['region'],
+            '华南': ['region'],
+
+            '品类': ['category'],
+            '类目': ['category'],
+            '商品': ['product', 'item'],
+            '产品': ['product'],
+
+            # Tables
+            '订单': ['order'],
+            '明细': ['item'],
+            '商品': ['product'],
+        }
+
+        keywords = []
+        query_lower = query.lower()
+
+        # Check for mapped terms
+        for term, related_terms in term_mapping.items():
+            if term in query:
+                keywords.append(term)
+                keywords.extend(related_terms)
+
+        # Add original query words
+        words = re.findall(r'\w+', query_lower)
+        keywords.extend(words)
+
+        return list(set(keywords))
 
 
 _schema_store = None

@@ -2,8 +2,8 @@
 import json
 from langchain.tools import tool
 
-from src.services.schema_store import get_schema_store
-from src.models import TableMetadata
+from ..services.schema_store import get_schema_store
+from ..models import TableMetadata
 
 
 @tool

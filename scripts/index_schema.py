@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from src.services.schema_store import SchemaStore, load_tables_from_json
+from services.schema_store import SchemaStore, load_tables_from_json
 
 def main():
     print("Loading schema metadata...")

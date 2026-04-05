@@ -2,8 +2,8 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
-from src.api.routes import query, health
-from src.services.schema_store import get_schema_store, load_tables_from_json
+from .api.routes import query, health
+from .services.schema_store import get_schema_store, load_tables_from_json
 from pathlib import Path
 
 

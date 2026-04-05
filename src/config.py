@@ -7,7 +7,7 @@ class Settings(BaseSettings):
 
     llm_api_key: str
     llm_base_url: str = "https://api.moonshot.cn/v1"
-    llm_model: str = "moonshot-v1-8k"
+    llm_model: str = "kimi-k2-turbo-preview"
 
     mysql_host: str = "localhost"
     mysql_port: int = 3306

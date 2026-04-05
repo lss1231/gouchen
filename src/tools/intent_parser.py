@@ -1,81 +1,74 @@
 """Intent Parser tool for NL2SQL."""
 import json
+from typing import Dict, Any
+
 from langchain.tools import tool
 from langchain_openai import ChatOpenAI
 
-from src.config import get_settings
-from src.models import QueryIntent
-
-
-INTENT_PARSER_PROMPT = """你是一个专业的查询意图解析器。你的任务是将用户的自然语言查询解析为结构化的查询意图。
-
-请分析用户的查询，提取以下信息：
-- metrics: 指标字段（如销售额、订单量、用户数等）
-- dimensions: 维度字段（如地区、品类、时间等）
-- filters: 过滤条件（如状态=已完成、金额>1000等）
-- time_range: 时间范围（如最近7天、本月、2024年Q1等）
-- aggregation: 聚合方式（sum, count, avg, max, min等，默认为sum）
-- sort_by: 排序字段
-- sort_order: 排序方向（asc或desc，默认为desc）
-- limit: 返回条数限制（默认为1000）
-
-请只返回JSON格式的结果，不要包含任何其他解释文字。
-"""
+from ..config import get_settings
 
 
 @tool
 def parse_intent(query: str) -> str:
-    """Parse user query into structured intent.
+    """Parse natural language query into structured intent.
+
+    This tool analyzes user queries and extracts structured information about
+    what metrics, dimensions, filters, and time ranges they want to query.
 
     Args:
-        query: User's natural language query
+        query: The natural language query from the user (e.g., "上个月销售额")
 
     Returns:
-        JSON string containing QueryIntent with fields:
-        - metrics: List of metric fields
-        - dimensions: List of dimension fields
+        A JSON string containing the parsed intent with fields:
+        - metrics: List of metrics to calculate (e.g., ["销售额"])
+        - dimensions: List of dimensions to group by (e.g., ["地区", "品类"])
         - filters: List of filter conditions
         - time_range: Time range specification
-        - aggregation: Aggregation method
-        - sort_by: Sort field
-        - sort_order: Sort direction
-        - limit: Result limit
+        - aggregation: Aggregation method (sum, count, avg, etc.)
+        - limit: Maximum number of results
     """
     try:
         settings = get_settings()
         llm = ChatOpenAI(
+            model=settings.llm_model,
             api_key=settings.llm_api_key,
             base_url=settings.llm_base_url,
-            model=settings.llm_model,
             temperature=0.1,
         )
 
-        messages = [
-            {"role": "system", "content": INTENT_PARSER_PROMPT},
-            {"role": "user", "content": f"请解析以下查询：\n\n{query}"}
-        ]
+        prompt = f"""Parse the following query into structured intent.
 
-        response = llm.invoke(messages)
+Query: {query}
+
+Return ONLY a JSON object with this structure:
+{{
+    "metrics": ["metric1", "metric2"],
+    "dimensions": ["dimension1", "dimension2"],
+    "filters": [],
+    "time_range": {{"type": "last_month"}},
+    "aggregation": "sum",
+    "limit": 1000
+}}
+
+Supported metrics: 销售额, 订单量, 用户数, 客单价
+Supported dimensions: 时间, 地区, 品类, 商品, 品牌
+Supported time ranges: today, yesterday, last_7_days, last_30_days, this_month, last_month"""
+
+        response = llm.invoke(prompt)
         content = response.content.strip()
 
-        # Try to parse and validate the response
-        try:
-            intent_data = json.loads(content)
-            # Validate by creating QueryIntent model
-            intent = QueryIntent(**intent_data)
-            return json.dumps(intent.model_dump(), ensure_ascii=False)
-        except json.JSONDecodeError:
-            # If not valid JSON, try to extract JSON from the response
-            import re
-            json_match = re.search(r'\{.*\}', content, re.DOTALL)
-            if json_match:
-                intent_data = json.loads(json_match.group())
-                intent = QueryIntent(**intent_data)
-                return json.dumps(intent.model_dump(), ensure_ascii=False)
-            raise ValueError(f"Invalid JSON response: {content}")
+        # Extract JSON if wrapped in code blocks
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0].strip()
+        elif "```" in content:
+            content = content.split("```")[1].split("```")[0].strip()
+
+        # Validate JSON
+        intent_data = json.loads(content)
+        return json.dumps(intent_data, ensure_ascii=False)
 
     except Exception as e:
         return json.dumps({
-            "error": str(e),
+            "error": f"Failed to parse intent: {str(e)}",
             "query": query
         }, ensure_ascii=False)

@@ -2,7 +2,7 @@
 import pytest
 import json
 
-from src.tools.sql_executor import _validate_sql_safety as validate_sql
+from tools.sql_executor import _validate_sql_safety as validate_sql
 
 
 def test_validate_sql_safe():

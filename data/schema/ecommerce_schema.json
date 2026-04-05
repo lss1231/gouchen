@@ -4,7 +4,7 @@
       "table_name": "dim_date",
       "table_cn_name": "日期维度表",
       "description": "日期维度表，包含日期相关的各种维度信息，用于时间序列分析",
-      "datasource": "doris",
+      "datasource": "mysql",
       "fields": [
         {
           "field_name": "date_key",
@@ -192,7 +192,7 @@
       "table_name": "fact_order",
       "table_cn_name": "订单事实表",
       "description": "订单事实表，存储订单级别的交易数据",
-      "datasource": "doris",
+      "datasource": "mysql",
       "fields": [
         {
           "field_name": "order_id",
@@ -248,7 +248,7 @@
       "table_name": "fact_order_item",
       "table_cn_name": "订单明细表",
       "description": "订单明细表，存储订单商品级别的详细数据",
-      "datasource": "doris",
+      "datasource": "mysql",
       "fields": [
         {
           "field_name": "item_id",

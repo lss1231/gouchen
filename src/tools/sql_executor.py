@@ -6,8 +6,8 @@ from langchain.tools import tool
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
-from src.config import get_settings
-from src.models import DatasourceType
+from ..config import get_settings
+from ..models import DatasourceType
 
 
 @tool

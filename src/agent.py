@@ -1,9 +1,10 @@
 """Deep Agent configuration for NL2SQL."""
 from deepagents import create_deep_agent
+from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 
-from src.config import get_settings
-from src.tools import parse_intent, retrieve_schema, generate_sql, execute_sql
+from .config import get_settings
+from .tools import parse_intent, retrieve_schema, generate_sql, execute_sql
 
 
 def create_nl2sql_agent():
@@ -15,24 +16,33 @@ def create_nl2sql_agent():
     """
     settings = get_settings()
 
+    # Configure Kimi model using ChatOpenAI
+    kimi_model = ChatOpenAI(
+        model=settings.llm_model,
+        api_key=settings.llm_api_key,
+        base_url=settings.llm_base_url,
+        temperature=1,  # Kimi model requires temperature=1
+    )
+
     agent = create_deep_agent(
         name="gouchen-nl2sql",
-        model=settings.llm_model,
+        model=kimi_model,  # Pass configured model instance
         tools=[parse_intent, retrieve_schema, generate_sql, execute_sql],
         system_prompt="""你是钩沉 (Gouchen) 智能数据查询助手。
 
 你的任务是将用户的自然语言查询转换为 SQL 并执行。
 
-工作流程：
+**必须遵循的工作流程**：
 1. 使用 parse_intent 解析用户查询意图
 2. 使用 retrieve_schema 检索相关数据表
 3. 使用 generate_sql 生成 SQL 查询
-4. 使用 execute_sql 执行查询（此操作需要人工审批）
+4. **必须调用 execute_sql 执行查询**（此操作需要人工审批，等待用户确认后再继续）
 
-安全规则：
-- 只查询用户有权限的数据
-- execute_sql 是敏感操作，系统会要求人工确认
-- 如果查询涉及敏感字段，提醒用户
+**重要规则**：
+- 你必须按顺序调用所有工具
+- 生成 SQL 后，必须调用 execute_sql 来执行
+- execute_sql 会触发人工审批流程，这是正常的行为
+- 不要只是说要执行，必须实际调用 execute_sql 工具
 
 返回格式：
 - SQL 语句
