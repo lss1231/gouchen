@@ -1,13 +1,40 @@
 """Intent parsing node for NL2SQL graph."""
 
-import json
-import re
 from typing import Any, Dict, List, Optional
 
 from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
 
 from ...config import get_settings
 from ..state import QueryIntent
+
+
+class QueryIntentSchema(BaseModel):
+    """Schema for query intent extraction using structured output."""
+
+    metrics: List[str] = Field(
+        description="要查询的指标字段列表（如 order_amount, paid_amount, order_count 等）"
+    )
+    dimensions: List[str] = Field(
+        description="分组维度列表（如 date, region, category 等）",
+        default_factory=lambda: ["date"],
+    )
+    filters: List[Dict[str, Any]] = Field(
+        description="过滤条件列表，每个条件包含 field, operator, value",
+        default_factory=list,
+    )
+    time_range: Dict[str, Any] = Field(
+        description="时间范围，包含 type 和 days",
+        default_factory=lambda: {"type": "last_30_days", "days": 30},
+    )
+    aggregation: str = Field(
+        description="聚合方式（sum, count, avg, max, min）",
+        default="sum",
+    )
+    limit: int = Field(
+        description="返回条数限制",
+        default=1000,
+    )
 
 # Time pattern mappings
 TIME_PATTERNS = {
@@ -84,31 +111,20 @@ def extract_dimension_keywords(query: str) -> List[str]:
     return list(set(dimensions)) if dimensions else ["date"]
 
 
-INTENT_PROMPT = """你是一个专业的数据分析意图解析助手。请从用户的自然语言查询中提取以下信息：
+INTENT_PROMPT = """你是一个专业的数据分析意图解析助手。请从用户的自然语言查询中提取查询意图。
 
-1. metrics: 用户想查询的指标字段列表（如销售额、订单数、用户数等）
-2. dimensions: 用户想按哪些维度分组（如时间、地区、品类等）
-3. filters: 过滤条件列表，每个条件包含 field, operator, value
-4. time_range: 时间范围，包含 type 和 days
-5. aggregation: 聚合方式（sum, count, avg, max, min）
-6. limit: 返回条数限制
-
-请严格按以下JSON格式返回（不要包含任何其他文本）：
-{
-    "metrics": ["field1", "field2"],
-    "dimensions": ["field1", "field2"],
-    "filters": [{"field": "...", "operator": "...", "value": "..."}],
-    "time_range": {"type": "...", "days": 30},
-    "aggregation": "sum",
-    "limit": 1000
-}
+支持的指标(metrics)：order_amount(销售额), paid_amount(实付金额), order_count(订单数), user_count(用户数), profit(利润), cost(成本)
+支持的维度(dimensions)：date(日期), region(地区), province(省份), city(城市), category(品类), product(商品), brand(品牌), channel(渠道)
+支持的时间范围(time_range)：today(今天), yesterday(昨天), this_week(本周), last_week(上周), last_7_days(近7天), last_30_days(近30天), this_month(本月), last_month(上月)
+支持的聚合方式(aggregation)：sum(求和), count(计数), avg(平均), max(最大), min(最小)
 
 用户查询: {query}
-"""
+
+请提取查询意图。"""
 
 
 def intent_node(state: Dict[str, Any]) -> Dict[str, Any]:
-    """Parse query intent using rule + LLM hybrid approach.
+    """Parse query intent using rule + LLM hybrid approach with structured output.
 
     Args:
         state: Current graph state
@@ -124,7 +140,7 @@ def intent_node(state: Dict[str, Any]) -> Dict[str, Any]:
     dimensions = extract_dimension_keywords(query)
 
     # Build default intent from rules
-    default_intent = {
+    default_intent: QueryIntent = {
         "metrics": metrics,
         "dimensions": dimensions,
         "filters": [],
@@ -134,43 +150,29 @@ def intent_node(state: Dict[str, Any]) -> Dict[str, Any]:
     }
 
     try:
-        # Try LLM-based extraction
+        # Try LLM-based extraction with structured output
         settings = get_settings()
         llm = ChatOpenAI(
             model=settings.llm_model,
             api_key=settings.llm_api_key,
             base_url=settings.llm_base_url,
             temperature=0.0,
-        )
+        ).with_structured_output(QueryIntentSchema)  # 使用结构化输出
 
         prompt = INTENT_PROMPT.format(query=query)
-        response = llm.invoke(prompt)
-
-        # Parse JSON response
-        content = response.content
-        # Extract JSON from response (handle markdown code blocks)
-        json_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
-        if json_match:
-            content = json_match.group(1)
-        else:
-            # Try to find JSON object directly
-            json_match = re.search(r'\{.*\}', content, re.DOTALL)
-            if json_match:
-                content = json_match.group(0)
-
-        parsed_intent = json.loads(content)
+        parsed = llm.invoke(prompt)  # 直接返回 QueryIntentSchema 对象
 
         # Merge with default intent (LLM takes precedence)
-        intent = {
-            "metrics": parsed_intent.get("metrics") or default_intent["metrics"],
-            "dimensions": parsed_intent.get("dimensions") or default_intent["dimensions"],
-            "filters": parsed_intent.get("filters") or default_intent["filters"],
-            "time_range": parsed_intent.get("time_range") or default_intent["time_range"],
-            "aggregation": parsed_intent.get("aggregation") or default_intent["aggregation"],
-            "limit": parsed_intent.get("limit") or default_intent["limit"],
+        intent: QueryIntent = {
+            "metrics": parsed.metrics or default_intent["metrics"],
+            "dimensions": parsed.dimensions or default_intent["dimensions"],
+            "filters": parsed.filters or default_intent["filters"],
+            "time_range": parsed.time_range or default_intent["time_range"],
+            "aggregation": parsed.aggregation or default_intent["aggregation"],
+            "limit": parsed.limit or default_intent["limit"],
         }
 
-    except Exception as e:
+    except Exception:
         # Fallback to rule-based intent if LLM fails
         intent = default_intent
 
