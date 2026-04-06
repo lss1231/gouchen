@@ -4,8 +4,21 @@ import re
 from typing import Any, Dict, List
 
 from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
 
 from ...config import get_settings
+
+
+class SQLGenerationResult(BaseModel):
+    """Schema for SQL generation output using structured output."""
+
+    sql: str = Field(
+        description="生成的SQL查询语句。必须是SELECT语句，禁止INSERT/UPDATE/DELETE/DROP/ALTER等修改操作。"
+    )
+    explanation: str = Field(
+        description="SQL查询的解释说明，描述查询的逻辑和返回的内容"
+    )
+
 
 # SQL Generator prompt with safety rules
 SQL_GENERATOR_PROMPT = """你是一个专业的SQL生成助手。请根据以下信息生成安全的SQL查询：
@@ -26,17 +39,7 @@ SQL_GENERATOR_PROMPT = """你是一个专业的SQL生成助手。请根据以下
 2. 所有字符串参数必须使用参数化查询或正确的转义
 3. 避免使用SELECT *，必须明确指定字段
 4. 时间范围必须在WHERE子句中明确指定
-5. 如果涉及多个表，使用JOIN并确保有适当的连接条件
-
-## 输出格式
-请按以下JSON格式返回：
-{{
-    "sql": "生成的SQL语句",
-    "explanation": "SQL的解释说明"
-}}
-
-只返回JSON，不要包含其他文本。
-"""
+5. 如果涉及多个表，使用JOIN并确保有适当的连接条件"""
 
 # Forbidden keywords for safety check
 FORBIDDEN_KEYWORDS = [
@@ -151,14 +154,14 @@ def sql_generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     limit = intent.get("limit", 1000)
 
     try:
-        # Generate SQL using LLM
+        # Generate SQL using LLM with structured output
         settings = get_settings()
         llm = ChatOpenAI(
             model=settings.llm_model,
             api_key=settings.llm_api_key,
             base_url=settings.llm_base_url,
             temperature=0.0,
-        )
+        ).with_structured_output(SQLGenerationResult)
 
         prompt = SQL_GENERATOR_PROMPT.format(
             metrics=metrics,
@@ -170,22 +173,9 @@ def sql_generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
             schema=schema_str,
         )
 
-        response = llm.invoke(prompt)
-        content = response.content
-
-        # Extract JSON from response
-        import json
-        json_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
-        if json_match:
-            content = json_match.group(1)
-        else:
-            json_match = re.search(r'\{.*\}', content, re.DOTALL)
-            if json_match:
-                content = json_match.group(0)
-
-        result = json.loads(content)
-        sql = result.get("sql", "")
-        explanation = result.get("explanation", "")
+        result = llm.invoke(prompt)  # 直接返回 SQLGenerationResult 对象
+        sql = result.sql
+        explanation = result.explanation
 
         # Validate SQL safety
         is_safe, error_msg = validate_sql_safety(sql)
