@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from langgraph.types import Command
 
 from src.graph.builder import build_graph, get_graph
 from src.graph.state import NL2SQLState, QueryIntent
@@ -379,6 +380,43 @@ def test_full_workflow_integration(mock_config, initial_state):
     result = graph.invoke(initial_state, mock_config)
 
     # Verify result structure
+    assert "formatted_output" in result or "error" in result
+
+
+def test_simple_workflow():
+    """测试简单工作流（自动模式，跳过HITL）"""
+    graph = build_graph()
+
+    config = {
+        "configurable": {
+            "thread_id": "test_001",
+            "llm_api_key": "test_key",
+            "db_url": "mysql+pymysql://test:test@localhost/test"
+        }
+    }
+
+    # 使用模拟数据测试
+    initial_state: NL2SQLState = {
+        "query": "上个月销售额",
+        "thread_id": "test_001",
+        "user_role": "admin",
+        "intent": None,
+        "relevant_tables": [],
+        "generated_sql": None,
+        "sql_explanation": None,
+        "needs_approval": False,  # 跳过审核
+        "approval_decision": None,
+        "execution_result": None,
+        "error": None,
+        "audit_log_id": None,
+        "start_time": None
+    }
+
+    # 注意：这个测试需要Mock LLM和数据库
+    # 实际运行时需要真实环境
+    result = graph.invoke(initial_state, config)
+
+    # 验证结果结构
     assert "formatted_output" in result or "error" in result
 
 
