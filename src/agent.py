@@ -1,4 +1,10 @@
-"""Deep Agent configuration for NL2SQL."""
+"""Deep Agent configuration for NL2SQL.
+
+DEPRECATED (2026-04-06): This module is kept for reference but NOT USED in production.
+The actual workflow is manually orchestrated in src/api/routes/query.py due to
+tool invocation issues with Deep Agents.
+
+"""
 from deepagents import create_deep_agent
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver

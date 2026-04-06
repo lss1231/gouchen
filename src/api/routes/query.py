@@ -1,183 +1,232 @@
-"""Query API endpoints with manual tool orchestration."""
-import json
-from fastapi import APIRouter
-from pydantic import BaseModel
-from typing import Optional
+"""Query API endpoints using LangGraph with HITL interrupt."""
+from typing import Any, Dict, Optional
 
-from ...tools import parse_intent, retrieve_schema, generate_sql, execute_sql
+from fastapi import APIRouter
+from langgraph.types import Command
+from pydantic import BaseModel, Field
+
+from ...graph.builder import get_graph
 
 router = APIRouter()
 
-# Store pending executions (in production, use Redis/database)
-pending_executions = {}
-
 
 class QueryRequest(BaseModel):
-    query: str
-    thread_id: Optional[str] = "default"
+    """Request to create a new query."""
+    query: str = Field(..., description="Natural language query")
+    thread_id: Optional[str] = Field("default", description="Thread ID for conversation")
+    user_role: str = Field("analyst", description="User role for permission checking")
+    datasource: Optional[str] = Field(None, description="Target datasource (mysql/doris)")
+
+
+class ApproveRequest(BaseModel):
+    """Request to approve or reject a pending query."""
+    thread_id: str = Field(..., description="Thread ID of the query")
+    decision: str = Field(..., description="Decision: approve, reject, or feedback")
+    edited_sql: Optional[str] = Field(None, description="Edited SQL if modifying")
 
 
 class QueryResponse(BaseModel):
-    success: bool
-    result: Optional[dict] = None
+    """Response for query endpoint."""
+    status: str = Field(..., description="Status: completed, pending_approval, or error")
+    result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
-    pending_approval: bool = False
+    thread_id: Optional[str] = None
+    pending_info: Optional[Dict[str, Any]] = None
+
+
+class StatusResponse(BaseModel):
+    """Response for status endpoint."""
+    thread_id: str
+    status: str
+    current_state: Optional[Dict[str, Any]] = None
+    next_node: Optional[str] = None
+    error: Optional[str] = None
 
 
 @router.post("/query", response_model=QueryResponse)
-async def query(request: QueryRequest):
+async def create_query(request: QueryRequest) -> QueryResponse:
     """
-    Execute natural language query with manual tool orchestration.
+    Create and execute a natural language query.
 
-    Workflow:
-    1. Parse intent from query
-    2. Retrieve relevant schema
+    The query goes through the LangGraph pipeline:
+    1. Parse intent
+    2. Retrieve schema
     3. Generate SQL
-    4. Return SQL for approval (HITL)
+    4. Human review (interrupt)
+    5. Execute SQL
+    6. Format result
+
+    If the graph is interrupted at the review step, returns pending_approval status.
     """
     try:
-        # Step 1: Parse intent
-        print(f"Step 1: Parsing intent for query: {request.query}")
-        intent_result = parse_intent.invoke({"query": request.query})
-        intent_data = json.loads(intent_result)
+        graph = get_graph()
+        config = {
+            "configurable": {
+                "thread_id": request.thread_id,
+            }
+        }
 
-        if "error" in intent_data:
-            return QueryResponse(success=False, error=f"Intent parsing failed: {intent_data['error']}")
-
-        print(f"Intent: {intent_data}")
-
-        # Step 2: Retrieve schema
-        print("Step 2: Retrieving schema...")
-        schema_result = retrieve_schema.invoke({
+        # Initial state
+        initial_state = {
             "query": request.query,
-            "top_k": 3
-        })
-        schema_data = json.loads(schema_result)
-
-        if "error" in schema_data:
-            return QueryResponse(success=False, error=f"Schema retrieval failed: {schema_data['error']}")
-
-        print(f"Schema: {schema_data}")
-
-        # Step 3: Generate SQL
-        print("Step 3: Generating SQL...")
-        sql_result = generate_sql.invoke({
-            "intent_json": intent_result,
-            "schema_json": schema_result
-        })
-        sql_data = json.loads(sql_result)
-
-        if "error" in sql_data or not sql_data.get("sql"):
-            return QueryResponse(success=False, error=f"SQL generation failed: {sql_data.get('error', 'Unknown error')}")
-
-        print(f"Generated SQL: {sql_data['sql']}")
-
-        # Step 4: Store for HITL approval
-        execution_id = f"{request.thread_id}_{id(sql_data)}"
-        pending_executions[execution_id] = {
             "thread_id": request.thread_id,
-            "query": request.query,
-            "intent": intent_data,
-            "schema": schema_data,
-            "sql_data": sql_data,
-            "sql": sql_data["sql"],
-            "datasource": sql_data.get("datasource", "mysql"),
-            "explanation": sql_data.get("explanation", "")
+            "user_role": request.user_role,
+            "intent": None,
+            "relevant_tables": [],
+            "generated_sql": None,
+            "sql_explanation": None,
+            "needs_approval": False,
+            "approval_decision": None,
+            "execution_result": None,
+            "error": None,
+            "audit_log_id": None,
+            "start_time": None,
         }
 
-        return QueryResponse(
-            success=True,
-            pending_approval=True,
-            result={
-                "message": "SQL generated and pending approval",
-                "execution_id": execution_id,
-                "query": request.query,
-                "generated_sql": sql_data["sql"],
-                "explanation": sql_data.get("explanation", ""),
-                "tables": sql_data.get("tables", []),
-                "intent": intent_data
+        # Invoke graph
+        result = graph.invoke(initial_state, config)
+
+        # Check if interrupted (pending approval)
+        state = graph.get_state(config)
+        if state.next:
+            # Graph is paused at interrupt
+            pending_info = {
+                "query": result.get("query", request.query),
+                "generated_sql": result.get("generated_sql"),
+                "sql_explanation": result.get("sql_explanation"),
+                "message": "SQL generated and pending approval. Use /api/v1/approve to approve or reject.",
             }
+            return QueryResponse(
+                status="pending_approval",
+                thread_id=request.thread_id,
+                pending_info=pending_info,
+            )
+
+        # Graph completed
+        return QueryResponse(
+            status="completed",
+            thread_id=request.thread_id,
+            result={
+                "query": result.get("query"),
+                "generated_sql": result.get("generated_sql"),
+                "sql_explanation": result.get("sql_explanation"),
+                "execution_result": result.get("execution_result"),
+                "approval_decision": result.get("approval_decision"),
+            },
         )
 
     except Exception as e:
         import traceback
         return QueryResponse(
-            success=False,
-            error=f"Query processing failed: {str(e)}\n{traceback.format_exc()}"
+            status="error",
+            thread_id=request.thread_id,
+            error=f"Query processing failed: {str(e)}\n{traceback.format_exc()}",
         )
 
 
-@router.post("/approve")
-async def approve_action(execution_id: str, decision: str = "approve", feedback: str = ""):
+@router.post("/approve", response_model=QueryResponse)
+async def approve_query(request: ApproveRequest) -> QueryResponse:
     """
-    Approve or reject pending SQL execution.
+    Approve, reject, or provide feedback for a pending query.
 
-    Args:
-        execution_id: The execution ID from the query response
-        decision: "approve" or "reject"
-        feedback: Optional feedback message
+    Uses Command(resume=...) to continue the graph execution
+    from the interrupt point.
     """
     try:
-        if execution_id not in pending_executions:
-            return {"success": False, "error": "Execution not found or expired"}
-
-        execution = pending_executions[execution_id]
-
-        if decision == "reject":
-            del pending_executions[execution_id]
-            return {
-                "success": True,
-                "result": {
-                    "status": "rejected",
-                    "message": f"SQL execution rejected: {feedback}",
-                    "sql": execution["sql"]
-                }
+        graph = get_graph()
+        config = {
+            "configurable": {
+                "thread_id": request.thread_id,
             }
+        }
 
-        if decision == "approve":
-            # Execute the SQL
-            print(f"Executing SQL: {execution['sql']}")
-            sql_json = json.dumps({
-                "sql": execution["sql"],
-                "datasource": execution["datasource"]
-            }, ensure_ascii=False)
+        # Prepare resume payload
+        resume_payload: Dict[str, Any] = {
+            "action": request.decision,
+        }
+        if request.edited_sql:
+            resume_payload["edited_sql"] = request.edited_sql
 
-            result = execute_sql.invoke({"sql_json": sql_json})
-            result_data = json.loads(result)
+        # Continue graph with Command
+        result = graph.invoke(
+            Command(resume=resume_payload),
+            config,
+        )
 
-            del pending_executions[execution_id]
+        # Check if there was an error
+        if result.get("error"):
+            return QueryResponse(
+                status="error",
+                thread_id=request.thread_id,
+                error=result.get("error"),
+            )
 
-            return {
-                "success": True,
-                "result": {
-                    "status": "executed",
-                    "query": execution["query"],
-                    "sql": execution["sql"],
-                    "execution_result": result_data
-                }
-            }
-
-        return {"success": False, "error": "Invalid decision. Use 'approve' or 'reject'"}
+        return QueryResponse(
+            status="completed",
+            thread_id=request.thread_id,
+            result={
+                "query": result.get("query"),
+                "generated_sql": result.get("generated_sql"),
+                "sql_explanation": result.get("sql_explanation"),
+                "execution_result": result.get("execution_result"),
+                "approval_decision": result.get("approval_decision"),
+            },
+        )
 
     except Exception as e:
         import traceback
-        return {
-            "success": False,
-            "error": f"Approval processing failed: {str(e)}\n{traceback.format_exc()}"
+        return QueryResponse(
+            status="error",
+            thread_id=request.thread_id,
+            error=f"Approval processing failed: {str(e)}\n{traceback.format_exc()}",
+        )
+
+
+@router.get("/status/{thread_id}", response_model=StatusResponse)
+async def get_status(thread_id: str) -> StatusResponse:
+    """
+    Check the current status of a query by thread_id.
+
+    Returns the current state and next node if the graph is paused.
+    """
+    try:
+        graph = get_graph()
+        config = {
+            "configurable": {
+                "thread_id": thread_id,
+            }
         }
 
+        state = graph.get_state(config)
 
-@router.get("/pending")
-async def list_pending():
-    """List all pending executions (for admin/debugging)."""
-    return {
-        "pending_count": len(pending_executions),
-        "executions": [
-            {
-                "execution_id": k,
-                "query": v["query"],
-                "sql": v["sql"]
-            }
-            for k, v in pending_executions.items()
-        ]
-    }
+        # Get current state values
+        state_values = state.values if state.values else {}
+
+        # Determine status
+        if state.next:
+            status = "pending_approval"
+            next_node = list(state.next)[0] if state.next else None
+        else:
+            status = "completed"
+            next_node = None
+
+        return StatusResponse(
+            thread_id=thread_id,
+            status=status,
+            current_state={
+                "query": state_values.get("query"),
+                "generated_sql": state_values.get("generated_sql"),
+                "sql_explanation": state_values.get("sql_explanation"),
+                "approval_decision": state_values.get("approval_decision"),
+                "error": state_values.get("error"),
+            },
+            next_node=next_node,
+        )
+
+    except Exception as e:
+        import traceback
+        return StatusResponse(
+            thread_id=thread_id,
+            status="error",
+            error=f"Status check failed: {str(e)}\n{traceback.format_exc()}",
+        )
