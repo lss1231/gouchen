@@ -52,6 +52,10 @@ class SchemaStore:
 
     def retrieve(self, query: str, top_k: int = 3) -> List[TableMetadata]:
         """Retrieve relevant tables for query using keyword matching."""
+        return self.search(query, top_k)
+
+    def search(self, query: str, top_k: int = 3) -> List[TableMetadata]:
+        """Search for relevant tables based on query using keyword matching."""
         # Extract keywords from query
         keywords = self._extract_keywords(query)
 
