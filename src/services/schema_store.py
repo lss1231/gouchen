@@ -87,7 +87,11 @@ class SchemaStore:
             '今天': ['date'],
             '昨天': ['date'],
             '上周': ['date', 'week'],
+            '本周': ['date', 'week'],
+            '近7天': ['date', 'week'],
+            '近30天': ['date', 'month'],
             '本月': ['date', 'month'],
+            '上月': ['date', 'month'],
             '上个月': ['date', 'month'],
 
             '地区': ['region', 'area', 'province'],
