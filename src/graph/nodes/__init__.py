@@ -6,6 +6,7 @@ from .intent import intent_node
 from .review import review_node
 from .schema import schema_node
 from .sql_generator import sql_generator_node
+from .summarizer import summarizer_node
 
 __all__ = [
     "intent_node",
@@ -13,5 +14,6 @@ __all__ = [
     "sql_generator_node",
     "review_node",
     "executor_node",
+    "summarizer_node",
     "formatter_node",
 ]

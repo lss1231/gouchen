@@ -12,15 +12,16 @@ from .nodes import (
     review_node,
     schema_node,
     sql_generator_node,
+    summarizer_node,
 )
 from .state import NL2SQLState
 
 
-def route_on_error(state: NL2SQLState) -> Literal["formatter", END]:
-    """Route to formatter on success, or END on error."""
+def route_on_error(state: NL2SQLState) -> Literal["summarizer", END]:
+    """Route to summarizer on success, or END on error."""
     if state.get("error"):
         return END
-    return "formatter"
+    return "summarizer"
 
 
 def build_graph() -> StateGraph:
@@ -33,6 +34,7 @@ def build_graph() -> StateGraph:
     workflow.add_node("generate_sql", sql_generator_node)
     workflow.add_node("review", review_node)
     workflow.add_node("execute", executor_node)
+    workflow.add_node("summarizer", summarizer_node)
     workflow.add_node("formatter", formatter_node)
 
     # Define deterministic flow edges
@@ -45,7 +47,8 @@ def build_graph() -> StateGraph:
     # Conditional routing from execute based on error state
     workflow.add_conditional_edges("execute", route_on_error)
 
-    # Formatter always goes to END
+    # Summarizer -> Formatter -> END
+    workflow.add_edge("summarizer", "formatter")
     workflow.add_edge("formatter", END)
 
     # Compile with memory checkpointer

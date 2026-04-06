@@ -15,6 +15,8 @@ class QueryIntent(TypedDict):
     time_range: Optional[Dict[str, str]]
     aggregation: str
     limit: int
+    analysis_type: str  # single, mom, yoy, comparison
+    compare_periods: List[Dict[str, Any]]
 
 
 class NL2SQLState(TypedDict):
@@ -30,6 +32,8 @@ class NL2SQLState(TypedDict):
     needs_approval: bool
     approval_decision: Optional[str]
     execution_result: Optional[Dict[str, Any]]
+    summary: Optional[str]  # 自然语言总结
+    formatted_result: Optional[Dict[str, Any]]
     error: Optional[str]
     audit_log_id: Optional[str]
     start_time: Optional[float]

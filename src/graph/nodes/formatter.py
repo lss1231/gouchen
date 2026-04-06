@@ -202,6 +202,7 @@ def formatter_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     execution_result = state.get("execution_result")
     query = state.get("query", "")
+    summary = state.get("summary")
 
     if not execution_result:
         return {
@@ -230,6 +231,7 @@ def formatter_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "rows": rows,
         "chart_recommendation": chart_type,
         "echarts_option": echarts_option,
+        "summary": summary,
     }
 
     return {"formatted_result": formatted_result}

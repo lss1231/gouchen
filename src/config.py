@@ -21,8 +21,10 @@ class Settings(BaseSettings):
     doris_password: str = ""
     doris_database: str
 
-    chroma_host: str = "localhost"
-    chroma_port: int = 8000
+    # Vector store settings
+    vector_store_path: str = "data/vector_store"
+    embedding_model: str = "BAAI/bge-small-zh"
+    use_vector_search: bool = True
 
     @property
     def mysql_url(self) -> str:

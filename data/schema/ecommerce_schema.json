@@ -191,8 +191,8 @@
     {
       "table_name": "fact_order",
       "table_cn_name": "订单事实表",
-      "description": "订单事实表，存储订单级别的交易数据",
-      "datasource": "mysql",
+      "description": "订单事实表，存储订单级别的交易数据，大数据量存储在Doris",
+      "datasource": "doris",
       "fields": [
         {
           "field_name": "order_id",
@@ -247,8 +247,8 @@
     {
       "table_name": "fact_order_item",
       "table_cn_name": "订单明细表",
-      "description": "订单明细表，存储订单商品级别的详细数据",
-      "datasource": "mysql",
+      "description": "订单明细表，存储订单商品级别的详细数据，大数据量存储在Doris",
+      "datasource": "doris",
       "fields": [
         {
           "field_name": "item_id",

@@ -30,9 +30,9 @@ def validate_sql_safety(sql: str) -> tuple[bool, str]:
 
     sql_lower = sql.lower().strip()
 
-    # Must start with SELECT
-    if not sql_lower.startswith("select"):
-        return False, "SQL must start with SELECT"
+    # Must start with SELECT or WITH (CTE)
+    if not (sql_lower.startswith("select") or sql_lower.startswith("with")):
+        return False, "SQL must start with SELECT or WITH"
 
     # Parse SQL to check for forbidden statements
     try:

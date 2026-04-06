@@ -103,6 +103,7 @@ async def create_query(request: QueryRequest) -> QueryResponse:
             )
 
         # Graph completed
+        formatted_result = result.get("formatted_result")
         return QueryResponse(
             status="completed",
             thread_id=request.thread_id,
@@ -111,6 +112,8 @@ async def create_query(request: QueryRequest) -> QueryResponse:
                 "generated_sql": result.get("generated_sql"),
                 "sql_explanation": result.get("sql_explanation"),
                 "execution_result": result.get("execution_result"),
+                "formatted_result": formatted_result,
+                "summary": formatted_result.get("summary") if formatted_result else None,
                 "approval_decision": result.get("approval_decision"),
             },
         )
@@ -161,6 +164,8 @@ async def approve_query(request: ApproveRequest) -> QueryResponse:
                 error=result.get("error"),
             )
 
+        # Prepare result with formatted_result and summary
+        formatted_result = result.get("formatted_result")
         return QueryResponse(
             status="completed",
             thread_id=request.thread_id,
@@ -169,6 +174,8 @@ async def approve_query(request: ApproveRequest) -> QueryResponse:
                 "generated_sql": result.get("generated_sql"),
                 "sql_explanation": result.get("sql_explanation"),
                 "execution_result": result.get("execution_result"),
+                "formatted_result": formatted_result,
+                "summary": formatted_result.get("summary") if formatted_result else None,
                 "approval_decision": result.get("approval_decision"),
             },
         )

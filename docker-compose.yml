@@ -19,19 +19,8 @@ services:
       - DORIS_USER=${DORIS_USER}
       - DORIS_PASSWORD=${DORIS_PASSWORD}
       - DORIS_DATABASE=${DORIS_DATABASE}
-      - CHROMA_HOST=chroma
-      - CHROMA_PORT=8000
-    depends_on:
-      - chroma
+      - VECTOR_STORE_PATH=/app/data/vector_store
+    volumes:
+      - ./data:/app/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
-
-  chroma:
-    image: chromadb/chroma:latest
-    ports:
-      - "8001:8000"
-    volumes:
-      - chroma_data:/chroma/chroma
-
-volumes:
-  chroma_data:

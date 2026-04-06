@@ -1,25 +1,59 @@
-"""Schema RAG using keyword-based retrieval for MVP."""
+"""Schema RAG using keyword-based or vector-based retrieval."""
 import json
 import re
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from ..models import TableMetadata
+from ..config import get_settings
 
 
 class SchemaStore:
-    """Simple keyword-based schema store for MVP.
+    """Schema store supporting both keyword and vector-based retrieval.
 
-    Uses keyword matching instead of embeddings for simplicity.
-    In production, switch to vector embeddings.
+    For MVP, uses keyword matching. For production, use vector embeddings
+    by setting use_vector_search=True.
     """
 
-    def __init__(self):
+    def __init__(self, use_vector_search: Optional[bool] = None):
+        """Initialize schema store.
+
+        Args:
+            use_vector_search: If True, use vector retrieval. If None,
+                uses the value from settings.use_vector_search.
+        """
         self._tables: List[TableMetadata] = []
+        self._embedding_service: Optional["SchemaEmbeddingService"] = None
+
+        # Determine whether to use vector search
+        if use_vector_search is None:
+            settings = get_settings()
+            self._use_vector_search = settings.use_vector_search
+        else:
+            self._use_vector_search = use_vector_search
+
+    def _get_embedding_service(self) -> "SchemaEmbeddingService":
+        """Lazy load embedding service."""
+        if self._embedding_service is None:
+            from .schema_embedding import SchemaEmbeddingService
+            self._embedding_service = SchemaEmbeddingService()
+        return self._embedding_service
 
     def index_tables(self, tables: List[TableMetadata]) -> None:
-        """Index tables."""
+        """Index tables.
+
+        If vector search is enabled, also builds the vector index.
+        """
         self._tables = tables
+
+        if self._use_vector_search:
+            try:
+                service = self._get_embedding_service()
+                service.build_index(tables)
+            except Exception as e:
+                # Fall back to keyword search if vector indexing fails
+                print(f"Warning: Vector indexing failed: {e}")
+                self._use_vector_search = False
 
     def _score_table(self, table: TableMetadata, keywords: List[str]) -> float:
         """Score a table based on keyword matches."""
@@ -51,11 +85,30 @@ class SchemaStore:
         return score
 
     def retrieve(self, query: str, top_k: int = 3) -> List[TableMetadata]:
-        """Retrieve relevant tables for query using keyword matching."""
+        """Retrieve relevant tables for query."""
         return self.search(query, top_k)
 
     def search(self, query: str, top_k: int = 3) -> List[TableMetadata]:
-        """Search for relevant tables based on query using keyword matching."""
+        """Search for relevant tables based on query.
+
+        Uses vector search if enabled and available, otherwise falls back
+        to keyword matching.
+        """
+        # Try vector search first if enabled
+        if self._use_vector_search:
+            try:
+                service = self._get_embedding_service()
+                if service.is_indexed():
+                    return service.search(query, top_k)
+            except Exception as e:
+                # Fall back to keyword search
+                print(f"Warning: Vector search failed: {e}")
+
+        # Fall back to keyword matching
+        return self._keyword_search(query, top_k)
+
+    def _keyword_search(self, query: str, top_k: int = 3) -> List[TableMetadata]:
+        """Search for relevant tables using keyword matching."""
         # Extract keywords from query
         keywords = self._extract_keywords(query)
 

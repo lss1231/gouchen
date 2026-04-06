@@ -237,7 +237,7 @@ def test_sql_generator_node_integration(mock_llm_class, initial_state):
         "metrics": ["sales_amount"],
         "dimensions": ["date"],
         "filters": [],
-        "time_range": {"type": "last_month", "days": 30},
+        "time_range": {"type": "last_month", "days": "30"},
         "aggregation": "sum",
         "limit": 1000,
     }
@@ -362,7 +362,7 @@ def test_route_on_error_without_error():
     state = {"error": None}
     result = route_on_error(state)
 
-    assert result == "formatter"
+    assert result == "summarizer"
 
 
 @pytest.mark.skip(reason="Requires full environment with LLM and database")

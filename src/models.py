@@ -1,11 +1,15 @@
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
 from pydantic import BaseModel, Field
 
 
 class DatasourceType(str, Enum):
     MYSQL = "mysql"
     DORIS = "doris"
+
+
+# Literal type for datasource fields
+DatasourceTypeLiteral = Literal["mysql", "doris"]
 
 
 class QueryIntent(BaseModel):
@@ -25,14 +29,14 @@ class TableMetadata(BaseModel):
     table_name: str
     table_cn_name: str
     description: str
-    datasource: DatasourceType
+    datasource: Union[DatasourceType, DatasourceTypeLiteral] = DatasourceType.MYSQL
     fields: List[Dict[str, Any]]
 
 
 class GeneratedSQL(BaseModel):
     """生成的 SQL"""
     sql: str
-    datasource: DatasourceType
+    datasource: Union[DatasourceType, DatasourceTypeLiteral] = DatasourceType.MYSQL
     tables: List[str]
     explanation: str
 
