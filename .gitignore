@@ -70,3 +70,6 @@ Thumbs.db
 # Backup files
 *.backup
 *~.bak
+
+# Brainstorming session artifacts
+.superpowers/
