@@ -1,5 +1,6 @@
 """FastAPI application entry point."""
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from .api.routes import query, health
@@ -32,6 +33,14 @@ app = FastAPI(
     description="自然语言数据查询助手 - Deep Agents 版",
     version="0.1.0",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(query.router, prefix="/api/v1")
