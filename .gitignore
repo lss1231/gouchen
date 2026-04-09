@@ -73,3 +73,6 @@ Thumbs.db
 
 # Brainstorming session artifacts
 .superpowers/
+
+# Git worktrees
+.worktrees/
