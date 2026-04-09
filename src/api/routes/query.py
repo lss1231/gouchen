@@ -1,5 +1,5 @@
-"""Query API endpoints using LangGraph with HITL interrupt."""
-from typing import Any, Dict, Optional
+"""Query API endpoints using LangGraph with HITL interrupt and clarification."""
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter
 from langgraph.types import Command
@@ -25,13 +25,26 @@ class ApproveRequest(BaseModel):
     edited_sql: Optional[str] = Field(None, description="Edited SQL if modifying")
 
 
+class ClarificationAnswer(BaseModel):
+    """Single clarification answer."""
+    field: str = Field(..., description="Field being clarified (metric/time/dimension)")
+    answer: str = Field(..., description="User's answer")
+
+
+class ClarifyRequest(BaseModel):
+    """Request to respond to clarification questions."""
+    thread_id: str = Field(..., description="Thread ID of the query")
+    answers: List[ClarificationAnswer] = Field(..., description="Answers to clarification questions")
+
+
 class QueryResponse(BaseModel):
     """Response for query endpoint."""
-    status: str = Field(..., description="Status: completed, pending_approval, or error")
+    status: str = Field(..., description="Status: completed, pending_approval, needs_clarification, or error")
     result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
     thread_id: Optional[str] = None
     pending_info: Optional[Dict[str, Any]] = None
+    clarification_info: Optional[Dict[str, Any]] = None
 
 
 class StatusResponse(BaseModel):
@@ -46,17 +59,16 @@ class StatusResponse(BaseModel):
 @router.post("/query", response_model=QueryResponse)
 async def create_query(request: QueryRequest) -> QueryResponse:
     """
-    Create and execute a natural language query.
+    Create and execute a natural language query with clarification support.
 
     The query goes through the LangGraph pipeline:
     1. Parse intent
-    2. Retrieve schema
-    3. Generate SQL
-    4. Human review (interrupt)
-    5. Execute SQL
-    6. Format result
-
-    If the graph is interrupted at the review step, returns pending_approval status.
+    2. Clarification (if ambiguous)
+    3. Retrieve schema
+    4. Generate SQL
+    5. Human review (interrupt)
+    6. Execute SQL
+    7. Format result
     """
     try:
         graph = get_graph()
@@ -66,7 +78,7 @@ async def create_query(request: QueryRequest) -> QueryResponse:
             }
         }
 
-        # Initial state
+        # Initial state with clarification defaults
         initial_state = {
             "query": request.query,
             "thread_id": request.thread_id,
@@ -81,15 +93,48 @@ async def create_query(request: QueryRequest) -> QueryResponse:
             "error": None,
             "audit_log_id": None,
             "start_time": None,
+            # Clarification fields
+            "clarification_needed": False,
+            "clarification_questions": [],
+            "clarification_responses": [],
+            "clarification_history": [],
+            "max_clarification_rounds": 3,
+            "current_clarification_round": 0,
         }
 
         # Invoke graph
         result = graph.invoke(initial_state, config)
 
-        # Check if interrupted (pending approval)
+        # Check if interrupted at clarification
         state = graph.get_state(config)
-        if state.next:
-            # Graph is paused at interrupt
+        if state.next and "clarification" in str(state.next):
+            # Get questions from interrupt payload in tasks
+            questions = []
+            for task in state.tasks:
+                if hasattr(task, 'interrupts') and task.interrupts:
+                    for interrupt in task.interrupts:
+                        if isinstance(interrupt, dict) and 'questions' in interrupt:
+                            questions = interrupt['questions']
+                            break
+
+            # Fallback to state values if not found in interrupts
+            if not questions:
+                questions = result.get("clarification_questions", [])
+
+            return QueryResponse(
+                status="needs_clarification",
+                thread_id=request.thread_id,
+                clarification_info={
+                    "round": result.get("current_clarification_round", 1),
+                    "max_rounds": result.get("max_clarification_rounds", 3),
+                    "questions": questions,
+                    "current_intent": result.get("intent"),
+                    "message": "查询存在歧义，需要澄清",
+                },
+            )
+
+        # Check if interrupted at review
+        if state.next and "review" in str(state.next):
             pending_info = {
                 "query": result.get("query", request.query),
                 "generated_sql": result.get("generated_sql"),
@@ -115,6 +160,7 @@ async def create_query(request: QueryRequest) -> QueryResponse:
                 "formatted_result": formatted_result,
                 "summary": formatted_result.get("summary") if formatted_result else None,
                 "approval_decision": result.get("approval_decision"),
+                "clarification_history": result.get("clarification_history"),
             },
         )
 
@@ -124,6 +170,92 @@ async def create_query(request: QueryRequest) -> QueryResponse:
             status="error",
             thread_id=request.thread_id,
             error=f"Query processing failed: {str(e)}\n{traceback.format_exc()}",
+        )
+
+
+@router.post("/clarify", response_model=QueryResponse)
+async def clarify_query(request: ClarifyRequest) -> QueryResponse:
+    """
+    Respond to clarification questions and continue query execution.
+
+    Args:
+        request: ClarifyRequest with thread_id and answers
+
+    Returns:
+        QueryResponse with status and result
+    """
+    try:
+        graph = get_graph()
+        config = {
+            "configurable": {
+                "thread_id": request.thread_id,
+            }
+        }
+
+        # Prepare resume payload for clarification
+        resume_payload = {
+            "action": "clarification_response",
+            "answers": [{"field": ans.field, "answer": ans.answer} for ans in request.answers],
+        }
+
+        # Continue graph with Command
+        result = graph.invoke(
+            Command(resume=resume_payload),
+            config,
+        )
+
+        # Check if more clarification needed
+        state = graph.get_state(config)
+        if state.next and "clarification" in str(state.next):
+            return QueryResponse(
+                status="needs_clarification",
+                thread_id=request.thread_id,
+                clarification_info={
+                    "round": result.get("current_clarification_round", 1),
+                    "max_rounds": result.get("max_clarification_rounds", 3),
+                    "questions": result.get("clarification_questions", []),
+                    "current_intent": result.get("intent"),
+                    "history": result.get("clarification_history", []),
+                    "message": "需要进一步澄清",
+                },
+            )
+
+        # Check if now at review stage
+        if state.next and "review" in str(state.next):
+            return QueryResponse(
+                status="pending_approval",
+                thread_id=request.thread_id,
+                pending_info={
+                    "query": result.get("query"),
+                    "generated_sql": result.get("generated_sql"),
+                    "sql_explanation": result.get("sql_explanation"),
+                    "clarification_history": result.get("clarification_history", []),
+                    "message": "澄清完成，SQL已生成，等待审核",
+                },
+            )
+
+        # Completed
+        formatted_result = result.get("formatted_result")
+        return QueryResponse(
+            status="completed",
+            thread_id=request.thread_id,
+            result={
+                "query": result.get("query"),
+                "generated_sql": result.get("generated_sql"),
+                "sql_explanation": result.get("sql_explanation"),
+                "execution_result": result.get("execution_result"),
+                "formatted_result": formatted_result,
+                "summary": formatted_result.get("summary") if formatted_result else None,
+                "clarification_history": result.get("clarification_history", []),
+            },
+        )
+
+    except Exception as e:
+        import traceback
+        return QueryResponse(
+            status="error",
+            thread_id=request.thread_id,
+            error=f"Clarification processing failed: {str(e)}\n{traceback.format_exc()}",
         )
 
 
@@ -177,6 +309,7 @@ async def approve_query(request: ApproveRequest) -> QueryResponse:
                 "formatted_result": formatted_result,
                 "summary": formatted_result.get("summary") if formatted_result else None,
                 "approval_decision": result.get("approval_decision"),
+                "clarification_history": result.get("clarification_history", []),
             },
         )
 
@@ -211,8 +344,15 @@ async def get_status(thread_id: str) -> StatusResponse:
 
         # Determine status
         if state.next:
-            status = "pending_approval"
-            next_node = list(state.next)[0] if state.next else None
+            next_nodes = list(state.next)
+            next_node = next_nodes[0] if next_nodes else None
+
+            if "clarification" in str(next_node):
+                status = "needs_clarification"
+            elif "review" in str(next_node):
+                status = "pending_approval"
+            else:
+                status = "running"
         else:
             status = "completed"
             next_node = None
@@ -226,6 +366,7 @@ async def get_status(thread_id: str) -> StatusResponse:
                 "sql_explanation": state_values.get("sql_explanation"),
                 "approval_decision": state_values.get("approval_decision"),
                 "error": state_values.get("error"),
+                "clarification_history": state_values.get("clarification_history"),
             },
             next_node=next_node,
         )

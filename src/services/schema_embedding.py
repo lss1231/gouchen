@@ -1,11 +1,5 @@
-"""Schema embedding service using FAISS for vector retrieval."""
-import json
-import pickle
-from pathlib import Path
+"""Schema embedding service using Qdrant for vector storage."""
 from typing import List, Optional
-
-from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import FAISS
 
 from ..models import TableMetadata
 from ..config import get_settings
@@ -14,150 +8,130 @@ from ..config import get_settings
 class SchemaEmbeddingService:
     """Service for embedding and retrieving schema metadata using vectors."""
 
-    def __init__(
-        self,
-        vector_store_path: Optional[str] = None,
-    ):
-        """Initialize the embedding service.
-
-        Args:
-            vector_store_path: Path to store FAISS index
-        """
+    def __init__(self):
+        """Initialize the embedding service."""
         settings = get_settings()
-        self.vector_store_path = Path(vector_store_path or settings.vector_store_path)
+        self._embedding_model_name = getattr(settings, 'embedding_model', 'BAAI/bge-small-zh-v1.5')
 
-        # Initialize OpenAI embeddings
-        self._embeddings: Optional[OpenAIEmbeddings] = None
+        # Lazy imports
+        self._model = None
+        self._qdrant_client = None
 
-        # Initialize FAISS vector store
-        self._vectorstore: Optional[FAISS] = None
-
-    def _get_embeddings(self) -> OpenAIEmbeddings:
+    def _get_model(self):
         """Lazy load the embedding model."""
-        if self._embeddings is None:
-            settings = get_settings()
-            self._embeddings = OpenAIEmbeddings(
-                api_key=settings.llm_api_key,
-                base_url=settings.llm_base_url,
-                model="text-embedding-3-small"
-            )
-        return self._embeddings
+        if self._model is None:
+            try:
+                from sentence_transformers import SentenceTransformer
+            except ImportError:
+                raise ImportError("sentence-transformers is not installed")
+
+            print(f"Loading embedding model: {self._embedding_model_name}...")
+            self._model = SentenceTransformer(self._embedding_model_name)
+        return self._model
+
+    def _get_qdrant_client(self):
+        """Lazy load Qdrant client."""
+        if self._qdrant_client is None:
+            from .qdrant_client import QdrantSchemaClient
+            self._qdrant_client = QdrantSchemaClient()
+        return self._qdrant_client
 
     def _table_to_text(self, table: TableMetadata) -> str:
-        """Convert table metadata to searchable text.
+        """Convert table metadata to searchable text."""
+        # Handle both dict and TableMetadata objects
+        if hasattr(table, 'fields'):
+            fields = table.fields
+            table_name = table.table_name
+            table_cn_name = table.table_cn_name
+            description = table.description
+        else:
+            fields = table.get('fields', [])
+            table_name = table.get('table_name', '')
+            table_cn_name = table.get('table_cn_name', '')
+            description = table.get('description', '')
 
-        Combines table name, Chinese name, description, and field information
-        into a single text for embedding.
-        """
         parts = [
-            f"表名: {table.table_name}",
-            f"中文名: {table.table_cn_name}",
-            f"描述: {table.description}",
-            "字段:",
+            f"表名: {table_name}",
+            f"中文名: {table_cn_name}",
+            f"描述: {description}",
         ]
 
-        for field in table.fields:
-            field_desc = f"  - {field['field_name']} ({field['field_cn_name']}): {field['description']}"
-            parts.append(field_desc)
+        # Add keywords if available (important for vector search matching)
+        if hasattr(table, 'keywords') and table.keywords:
+            parts.append(f"关键词: {', '.join(table.keywords)}")
+        elif isinstance(table, dict) and table.get('keywords'):
+            parts.append(f"关键词: {', '.join(table['keywords'])}")
+
+        parts.append("字段:")
+        for field in fields:
+            if isinstance(field, dict):
+                field_name = field.get('field_name', '')
+                field_cn_name = field.get('field_cn_name', '')
+                field_desc = field.get('description', '')
+            else:
+                field_name = getattr(field, 'field_name', '')
+                field_cn_name = getattr(field, 'field_cn_name', '')
+                field_desc = getattr(field, 'description', '')
+            field_desc_str = f"  - {field_name} ({field_cn_name}): {field_desc}"
+            parts.append(field_desc_str)
 
         return "\n".join(parts)
 
-    def build_index(self, tables: List[TableMetadata]) -> None:
+    def build_index(self, tables: List[TableMetadata], skip_if_exists: bool = True) -> None:
         """Build vector index from tables.
 
         Args:
             tables: List of table metadata to index
+            skip_if_exists: If True, skip indexing if Qdrant already has data
         """
         if not tables:
             return
 
-        embeddings = self._get_embeddings()
+        qdrant = self._get_qdrant_client()
 
-        # Prepare texts and metadata
-        texts = []
-        metadatas = []
+        # Check if already indexed
+        if skip_if_exists and qdrant.is_collection_ready():
+            existing_count = qdrant.get_table_count()
+            if existing_count >= len(tables):
+                print(f"Vector index already exists with {existing_count} tables, skipping rebuild")
+                return
 
-        for table in tables:
-            text = self._table_to_text(table)
-            metadata = {
-                "table_name": table.table_name,
-                "table_cn_name": table.table_cn_name,
-                "description": table.description,
-                "datasource": table.datasource.value if hasattr(table.datasource, "value") else table.datasource,
-                "fields": json.dumps(table.fields, ensure_ascii=False),
-            }
-            texts.append(text)
-            metadatas.append(metadata)
+        model = self._get_model()
 
-        # Create FAISS vector store
-        self._vectorstore = FAISS.from_texts(
-            texts=texts,
-            embedding=embeddings,
-            metadatas=metadatas
-        )
+        # Convert tables to texts
+        texts = [self._table_to_text(table) for table in tables]
 
-        # Save to disk
-        self.vector_store_path.mkdir(parents=True, exist_ok=True)
-        self._vectorstore.save_local(str(self.vector_store_path))
+        print(f"Embedding {len(texts)} tables...")
 
-    def load_index(self) -> bool:
-        """Load vector index from disk.
+        # Generate embeddings
+        embeddings = model.encode(texts, normalize_embeddings=True, show_progress_bar=True)
+        embeddings_list = embeddings.tolist()
 
-        Returns:
-            True if index was loaded successfully, False otherwise
-        """
-        try:
-            index_file = self.vector_store_path / "index.faiss"
-            if not index_file.exists():
-                return False
-
-            embeddings = self._get_embeddings()
-            self._vectorstore = FAISS.load_local(
-                str(self.vector_store_path),
-                embeddings,
-                allow_dangerous_deserialization=True
-            )
-            return True
-        except Exception:
-            return False
+        # Store in Qdrant
+        qdrant.upsert_tables(tables, embeddings_list)
+        print(f"Stored {len(tables)} tables to Qdrant")
 
     def search(self, query: str, top_k: int = 3) -> List[TableMetadata]:
-        """Search for relevant tables using vector similarity.
+        """Search for relevant tables using vector similarity."""
+        qdrant = self._get_qdrant_client()
 
-        Args:
-            query: Natural language query
-            top_k: Number of results to return
+        if not qdrant.is_collection_ready():
+            return []
 
-        Returns:
-            List of matching table metadata
-        """
-        if self._vectorstore is None:
-            if not self.load_index():
-                return []
+        # Encode query
+        model = self._get_model()
+        query_embedding = model.encode(query, normalize_embeddings=True)
 
-        # Search
-        results = self._vectorstore.similarity_search(query, k=top_k)
-
-        # Convert back to TableMetadata
-        tables = []
-        for doc in results:
-            metadata = doc.metadata
-            table = TableMetadata(
-                table_name=metadata["table_name"],
-                table_cn_name=metadata["table_cn_name"],
-                description=metadata["description"],
-                datasource=metadata["datasource"],
-                fields=json.loads(metadata["fields"]),
-            )
-            tables.append(table)
-
-        return tables
+        # Search in Qdrant (doris only)
+        return qdrant.search(query_embedding.tolist(), top_k=top_k)
 
     def is_indexed(self) -> bool:
         """Check if the vector index exists and has data."""
-        if self._vectorstore is not None:
-            return True
-        return self.load_index()
+        try:
+            qdrant = self._get_qdrant_client()
+            return qdrant.is_collection_ready()
+        except Exception:
+            return False
 
 
 # Singleton instance

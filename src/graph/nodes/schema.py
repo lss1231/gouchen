@@ -7,36 +7,26 @@ from ...services.permission import get_permission_service
 
 
 def schema_node(state: Dict[str, Any]) -> Dict[str, Any]:
-    """Retrieve relevant schema with permission filtering.
-
-    Args:
-        state: Current graph state
-
-    Returns:
-        State updates with filtered relevant tables
-    """
+    """Retrieve relevant schema with permission filtering."""
     query = state.get("query", "")
     user_role = state.get("user_role", "viewer")
-    intent = state.get("intent", {})
 
     # Get services
     schema_store = get_schema_store()
     permission_service = get_permission_service()
 
-    # Retrieve relevant tables based on query and intent
-    # Use top_k=5 to get more candidates for filtering
+    # Retrieve relevant tables based on query
     relevant_tables = schema_store.retrieve(query, top_k=5)
 
     # Filter tables by user role permissions
     filtered_tables = []
     for table in relevant_tables:
         if permission_service.can_query_table(user_role, table.table_name):
-            # Convert TableMetadata to dict for state
             table_dict = {
                 "table_name": table.table_name,
                 "table_cn_name": table.table_cn_name,
                 "description": table.description,
-                "datasource": table.datasource.value if hasattr(table.datasource, "value") else table.datasource,
+                "datasource": "doris",
                 "fields": table.fields,
             }
             filtered_tables.append(table_dict)

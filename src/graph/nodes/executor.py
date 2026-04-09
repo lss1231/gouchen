@@ -1,4 +1,4 @@
-"""SQL executor node for NL2SQL graph."""
+"""SQL executor node for NL2SQL graph - Doris only."""
 
 import time
 from typing import Any, Dict, List
@@ -7,6 +7,7 @@ import sqlparse
 from sqlalchemy import create_engine, text
 
 from ...config import get_settings
+
 
 # Forbidden keywords for additional safety validation
 FORBIDDEN_KEYWORDS = [
@@ -17,14 +18,7 @@ FORBIDDEN_KEYWORDS = [
 
 
 def validate_sql_safety(sql: str) -> tuple[bool, str]:
-    """Validate SQL for safety issues using sqlparse.
-
-    Args:
-        sql: SQL string to validate
-
-    Returns:
-        Tuple of (is_safe, error_message)
-    """
+    """Validate SQL for safety issues."""
     if not sql or not isinstance(sql, str):
         return False, "SQL query is empty or invalid"
 
@@ -38,7 +32,6 @@ def validate_sql_safety(sql: str) -> tuple[bool, str]:
     try:
         parsed = sqlparse.parse(sql)
         for statement in parsed:
-            # Get the first token to check statement type
             first_token = None
             for token in statement.tokens:
                 if not token.is_whitespace:
@@ -47,7 +40,6 @@ def validate_sql_safety(sql: str) -> tuple[bool, str]:
 
             if first_token:
                 token_value = str(first_token).lower()
-                # Check if it's a DML/DDL statement other than SELECT
                 if token_value in ["insert", "update", "delete", "drop", "alter", "truncate", "create", "grant", "revoke"]:
                     return False, f"Forbidden SQL statement type: {token_value}"
 
@@ -63,17 +55,9 @@ def validate_sql_safety(sql: str) -> tuple[bool, str]:
 
 
 def executor_node(state: Dict[str, Any]) -> Dict[str, Any]:
-    """Execute SQL query with safety validation.
-
-    Args:
-        state: Current graph state
-
-    Returns:
-        State updates with execution result
-    """
+    """Execute SQL query against Doris with safety validation."""
     generated_sql = state.get("generated_sql")
     approval_decision = state.get("approval_decision")
-    relevant_tables = state.get("relevant_tables", [])
 
     # Check if SQL was approved (if HITL was used)
     if approval_decision == "rejected":
@@ -96,26 +80,11 @@ def executor_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "error": f"SQL safety check failed: {error_msg}",
         }
 
-    # Determine datasource from relevant tables
-    datasource = "mysql"  # default
-    if relevant_tables:
-        first_table = relevant_tables[0]
-        ds = first_table.get("datasource", "mysql")
-        if isinstance(ds, str):
-            datasource = ds
-        else:
-            datasource = getattr(ds, "value", "mysql")
-
     try:
         settings = get_settings()
 
-        # Create database connection
-        if datasource == "doris":
-            db_url = settings.doris_url
-        else:
-            db_url = settings.mysql_url
-
-        engine = create_engine(db_url, pool_pre_ping=True)
+        # Create Doris database connection
+        engine = create_engine(settings.database_url, pool_pre_ping=True)
 
         # Execute query with timing
         start_time = time.time()
@@ -129,7 +98,7 @@ def executor_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 for col in result.keys():
                     columns.append({
                         "name": col,
-                        "type": "string",  # Simplified type mapping
+                        "type": "string",
                     })
 
                 # Fetch rows
@@ -156,7 +125,7 @@ def executor_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "row_count": len(rows),
             "columns": columns,
             "rows": rows,
-            "datasource": datasource,
+            "datasource": "doris",
         }
 
         return {"execution_result": execution_result}

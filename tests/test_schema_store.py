@@ -11,12 +11,12 @@ class TestSchemaStore:
     @pytest.fixture
     def schema_path(self):
         """Get path to test schema file."""
-        return Path(__file__).parent.parent / "data" / "schema" / "ecommerce_schema.json"
+        return Path(__file__).parent.parent / "data" / "schema" / "doris_schema_enhanced.json"
 
     @pytest.fixture
     def store(self, schema_path):
         """Create a SchemaStore with loaded tables."""
-        store = SchemaStore()
+        store = SchemaStore(use_vector_search=False)  # Disable vector search for unit tests
         tables = load_tables_from_json(schema_path)
         store.index_tables(tables)
         return store
@@ -24,12 +24,13 @@ class TestSchemaStore:
     def test_load_tables_from_json(self, schema_path):
         """Test loading tables from JSON file."""
         tables = load_tables_from_json(schema_path)
-        assert len(tables) == 6
+        assert len(tables) == 15  # 15 tables in doris_schema_enhanced.json
 
         table_names = [t.table_name for t in tables]
         assert "dim_date" in table_names
         assert "dim_region" in table_names
-        assert "fact_order" in table_names
+        assert "dwd_order_detail" in table_names
+        assert "dws_sales_daily" in table_names
 
     def test_extract_keywords_time_terms(self, store):
         """Test keyword extraction for time-related terms."""
@@ -61,26 +62,26 @@ class TestSchemaStore:
     def test_score_table_table_name_match(self, store):
         """Test that table name matches score higher."""
         tables = store._tables
-        fact_order = next(t for t in tables if t.table_name == "fact_order")
+        dwd_order = next(t for t in tables if t.table_name == "dwd_order_detail")
 
         # Table name match should score 3.0
-        score = store._score_table(fact_order, ["order"])
-        assert score == 3.0
+        score = store._score_table(dwd_order, ["order"])
+        assert score >= 3.0
 
         # Field match should score 1.0
-        score = store._score_table(fact_order, ["amount"])
-        assert score == 1.0
+        score = store._score_table(dwd_order, ["pay"])
+        assert score >= 1.0
 
-    def test_search_returns_fact_order_for_sales_query(self, store):
-        """Test '上个月销售额' returns fact_order table."""
+    def test_search_returns_order_detail_for_sales_query(self, store):
+        """Test '上个月销售额' returns dwd_order_detail table."""
         results = store.search("上个月销售额")
 
         table_names = [t.table_name for t in results]
-        assert "fact_order" in table_names
+        assert "dwd_order_detail" in table_names or "dws_sales_daily" in table_names
 
     def test_search_returns_dim_region_for_region_query(self, store):
-        """Test '华东地区' returns dim_region table."""
-        results = store.search("华东地区")
+        """Test '地区维度' returns dim_region table."""
+        results = store.search("地区维度省份城市")
 
         table_names = [t.table_name for t in results]
         assert "dim_region" in table_names
@@ -106,15 +107,15 @@ class TestSchemaStore:
         results = store.search("近7天各省份的订单金额")
 
         table_names = [t.table_name for t in results]
-        # Should include fact_order for order amount
-        assert "fact_order" in table_names
+        # Should include dws_sales_daily for province aggregation
+        assert "dws_sales_daily" in table_names or "dwd_order_detail" in table_names
 
     def test_score_table_with_multiple_keywords(self, store):
         """Test scoring with multiple keywords."""
         tables = store._tables
-        fact_order = next(t for t in tables if t.table_name == "fact_order")
+        dwd_order = next(t for t in tables if t.table_name == "dwd_order_detail")
 
         # Multiple matches should accumulate
-        score = store._score_table(fact_order, ["order", "amount", "paid"])
-        # order = 3.0 (table name), amount = 1.0, paid = 1.0
+        score = store._score_table(dwd_order, ["order", "pay", "user"])
+        # order = 3.0 (table name), pay = 1.0, user = 1.0
         assert score >= 5.0

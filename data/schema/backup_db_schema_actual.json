@@ -1,0 +1,844 @@
+{
+  "tables": [
+    {
+      "table_name": "ads_category_rank",
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "data_type": "date",
+          "description": ""
+        },
+        {
+          "field_name": "category_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "category_name",
+          "data_type": "varchar(50)",
+          "description": ""
+        },
+        {
+          "field_name": "gmv",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "order_count",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "product_count",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "gmv_rank",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "gmv_share",
+          "data_type": "decimal(6,4)",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "table_name": "ads_region_rank",
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "data_type": "date",
+          "description": ""
+        },
+        {
+          "field_name": "province_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "province_name",
+          "data_type": "varchar(50)",
+          "description": ""
+        },
+        {
+          "field_name": "gmv",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "order_count",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "user_count",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "gmv_rank",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "gmv_share",
+          "data_type": "decimal(6,4)",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "table_name": "ads_sales_kpi",
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "data_type": "date",
+          "description": ""
+        },
+        {
+          "field_name": "kpi_name",
+          "data_type": "varchar(50)",
+          "description": ""
+        },
+        {
+          "field_name": "kpi_value",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "kpi_unit",
+          "data_type": "varchar(20)",
+          "description": ""
+        },
+        {
+          "field_name": "mom_growth",
+          "data_type": "decimal(8,4)",
+          "description": ""
+        },
+        {
+          "field_name": "yoy_growth",
+          "data_type": "decimal(8,4)",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "table_name": "ads_user_retention",
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "data_type": "date",
+          "description": ""
+        },
+        {
+          "field_name": "register_date",
+          "data_type": "date",
+          "description": ""
+        },
+        {
+          "field_name": "retention_day",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "new_user_count",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "retained_user_count",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "retention_rate",
+          "data_type": "decimal(6,4)",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "table_name": "dim_date",
+      "fields": [
+        {
+          "field_name": "date_key",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "date_str",
+          "data_type": "date",
+          "description": ""
+        },
+        {
+          "field_name": "year",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "quarter",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "month",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "day",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "week_of_year",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "day_of_week",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "day_name",
+          "data_type": "varchar(10)",
+          "description": ""
+        },
+        {
+          "field_name": "month_name",
+          "data_type": "varchar(10)",
+          "description": ""
+        },
+        {
+          "field_name": "is_weekend",
+          "data_type": "tinyint",
+          "description": ""
+        },
+        {
+          "field_name": "is_holiday",
+          "data_type": "tinyint",
+          "description": ""
+        },
+        {
+          "field_name": "holiday_name",
+          "data_type": "varchar(50)",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "table_name": "dim_product",
+      "fields": [
+        {
+          "field_name": "product_id",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "product_name",
+          "data_type": "varchar(200)",
+          "description": ""
+        },
+        {
+          "field_name": "category_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "category_name",
+          "data_type": "varchar(50)",
+          "description": ""
+        },
+        {
+          "field_name": "brand_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "brand_name",
+          "data_type": "varchar(50)",
+          "description": ""
+        },
+        {
+          "field_name": "price",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "cost",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "profit_rate",
+          "data_type": "decimal(5,4)",
+          "description": ""
+        },
+        {
+          "field_name": "status",
+          "data_type": "tinyint",
+          "description": ""
+        },
+        {
+          "field_name": "create_date",
+          "data_type": "date",
+          "description": ""
+        },
+        {
+          "field_name": "update_date",
+          "data_type": "date",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "table_name": "dim_region",
+      "fields": [
+        {
+          "field_name": "region_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "region_code",
+          "data_type": "varchar(20)",
+          "description": ""
+        },
+        {
+          "field_name": "region_name",
+          "data_type": "varchar(50)",
+          "description": ""
+        },
+        {
+          "field_name": "parent_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "region_level",
+          "data_type": "tinyint",
+          "description": ""
+        },
+        {
+          "field_name": "region_path",
+          "data_type": "varchar(200)",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "table_name": "dwd_order_detail",
+      "fields": [
+        {
+          "field_name": "order_id",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "order_item_id",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "user_id",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "product_id",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "category_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "brand_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "quantity",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "unit_price",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "unit_cost",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "discount_amount",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "pay_amount",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "profit",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "order_status",
+          "data_type": "tinyint",
+          "description": ""
+        },
+        {
+          "field_name": "pay_type",
+          "data_type": "tinyint",
+          "description": ""
+        },
+        {
+          "field_name": "province_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "city_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "order_date",
+          "data_type": "date",
+          "description": ""
+        },
+        {
+          "field_name": "order_month",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "pay_time",
+          "data_type": "datetime",
+          "description": ""
+        },
+        {
+          "field_name": "create_time",
+          "data_type": "datetime",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "table_name": "dws_sales_daily",
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "data_type": "date",
+          "description": ""
+        },
+        {
+          "field_name": "category_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "province_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "order_count",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "order_user_count",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "product_count",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "gmv",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "discount_amount",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "actual_amount",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "cost_amount",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "profit_amount",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "table_name": "dws_sales_monthly",
+      "fields": [
+        {
+          "field_name": "stat_month",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "category_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "province_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "order_count",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "order_user_count",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "product_count",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "gmv",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "discount_amount",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "actual_amount",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "cost_amount",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "profit_amount",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "table_name": "dws_user_stats",
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "data_type": "date",
+          "description": ""
+        },
+        {
+          "field_name": "new_users",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "active_users",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "total_users",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "paying_users",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "orders_per_user",
+          "data_type": "decimal(8,2)",
+          "description": ""
+        },
+        {
+          "field_name": "gmv_per_user",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "table_name": "ods_order_items",
+      "fields": [
+        {
+          "field_name": "item_id",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "order_id",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "product_id",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "product_name",
+          "data_type": "varchar(200)",
+          "description": ""
+        },
+        {
+          "field_name": "quantity",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "unit_price",
+          "data_type": "decimal(12,2)",
+          "description": ""
+        },
+        {
+          "field_name": "total_amount",
+          "data_type": "decimal(12,2)",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "table_name": "ods_orders",
+      "fields": [
+        {
+          "field_name": "order_id",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "user_id",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "order_status",
+          "data_type": "tinyint",
+          "description": ""
+        },
+        {
+          "field_name": "total_amount",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "discount_amount",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "pay_amount",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "pay_type",
+          "data_type": "tinyint",
+          "description": ""
+        },
+        {
+          "field_name": "pay_time",
+          "data_type": "datetime",
+          "description": ""
+        },
+        {
+          "field_name": "ship_time",
+          "data_type": "datetime",
+          "description": ""
+        },
+        {
+          "field_name": "receive_time",
+          "data_type": "datetime",
+          "description": ""
+        },
+        {
+          "field_name": "address_id",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "remark",
+          "data_type": "varchar(500)",
+          "description": ""
+        },
+        {
+          "field_name": "create_time",
+          "data_type": "datetime",
+          "description": ""
+        },
+        {
+          "field_name": "update_time",
+          "data_type": "datetime",
+          "description": ""
+        },
+        {
+          "field_name": "etl_time",
+          "data_type": "datetime",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "table_name": "ods_products",
+      "fields": [
+        {
+          "field_name": "product_id",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "product_name",
+          "data_type": "varchar(200)",
+          "description": ""
+        },
+        {
+          "field_name": "category_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "brand_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "price",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "cost",
+          "data_type": "decimal(18,2)",
+          "description": ""
+        },
+        {
+          "field_name": "stock",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "status",
+          "data_type": "tinyint",
+          "description": ""
+        },
+        {
+          "field_name": "create_time",
+          "data_type": "datetime",
+          "description": ""
+        },
+        {
+          "field_name": "update_time",
+          "data_type": "datetime",
+          "description": ""
+        },
+        {
+          "field_name": "etl_time",
+          "data_type": "datetime",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "table_name": "ods_users",
+      "fields": [
+        {
+          "field_name": "user_id",
+          "data_type": "bigint",
+          "description": ""
+        },
+        {
+          "field_name": "username",
+          "data_type": "varchar(50)",
+          "description": ""
+        },
+        {
+          "field_name": "email",
+          "data_type": "varchar(100)",
+          "description": ""
+        },
+        {
+          "field_name": "phone",
+          "data_type": "varchar(20)",
+          "description": ""
+        },
+        {
+          "field_name": "gender",
+          "data_type": "tinyint",
+          "description": ""
+        },
+        {
+          "field_name": "birthday",
+          "data_type": "date",
+          "description": ""
+        },
+        {
+          "field_name": "register_time",
+          "data_type": "datetime",
+          "description": ""
+        },
+        {
+          "field_name": "last_login_time",
+          "data_type": "datetime",
+          "description": ""
+        },
+        {
+          "field_name": "user_status",
+          "data_type": "tinyint",
+          "description": ""
+        },
+        {
+          "field_name": "city_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "province_id",
+          "data_type": "int",
+          "description": ""
+        },
+        {
+          "field_name": "etl_time",
+          "data_type": "datetime",
+          "description": ""
+        }
+      ]
+    }
+  ]
+}

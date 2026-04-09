@@ -1,0 +1,340 @@
+{
+  "test_suite": "Phase 1 MVP - SQL生成准确性测试",
+  "version": "1.1",
+  "total_cases": 30,
+  "categories": {
+    "single_table": {"name": "单表查询", "count": 8, "datasource": "doris"},
+    "join": {"name": "JOIN查询", "count": 6, "datasource": "doris"},
+    "aggregation": {"name": "聚合分析", "count": 8, "datasource": "doris"},
+    "user_analytics": {"name": "用户分析", "count": 4, "datasource": "doris"},
+    "clarification": {"name": "需要澄清", "count": 4, "expected": "触发澄清流程"}
+  },
+  "test_cases": [
+    {
+      "id": "A01",
+      "category": "single_table",
+      "name": "订单号精确查询",
+      "query": "订单号ORD2024010110000000001的详情",
+      "expected_datasource": "doris",
+      "expected_tables": ["ods_orders"],
+      "expected_sql_pattern": "SELECT * FROM ods_orders WHERE order_id = 10000000001",
+      "validation_rules": ["使用ods_orders表", "WHERE条件包含order_id", "精确匹配订单号"],
+      "description": "根据订单号查询订单详情"
+    },
+    {
+      "id": "A02",
+      "category": "single_table",
+      "name": "手机号查用户",
+      "query": "手机号13800138000的用户信息",
+      "expected_datasource": "doris",
+      "expected_tables": ["ods_users"],
+      "expected_sql_pattern": "SELECT * FROM ods_users WHERE phone = '13800138000'",
+      "validation_rules": ["使用ods_users表", "WHERE条件包含phone字段"],
+      "description": "根据手机号查询用户信息"
+    },
+    {
+      "id": "A03",
+      "category": "single_table",
+      "name": "商品价格查询",
+      "query": "iPhone 16 Pro的价格是多少",
+      "expected_datasource": "doris",
+      "expected_tables": ["dim_product"],
+      "expected_sql_pattern": "SELECT price FROM dim_product WHERE product_name LIKE '%iPhone 16 Pro%'",
+      "validation_rules": ["使用dim_product表", "返回price字段", "使用LIKE模糊匹配"],
+      "description": "查询指定商品的售价"
+    },
+    {
+      "id": "A04",
+      "category": "single_table",
+      "name": "用户订单列表",
+      "query": "用户ID为12345的所有订单",
+      "expected_datasource": "doris",
+      "expected_tables": ["ods_orders"],
+      "expected_sql_pattern": "SELECT * FROM ods_orders WHERE user_id = 12345 ORDER BY create_time DESC",
+      "validation_rules": ["使用ods_orders表", "WHERE user_id = 12345", "按时间倒序"],
+      "description": "查询指定用户的所有订单"
+    },
+    {
+      "id": "A05",
+      "category": "single_table",
+      "name": "订单明细查询",
+      "query": "订单ORD2024010110000000001的明细有哪些商品",
+      "expected_datasource": "doris",
+      "expected_tables": ["ods_order_items"],
+      "expected_sql_pattern": "SELECT * FROM ods_order_items WHERE order_id = 10000000001",
+      "validation_rules": ["使用ods_order_items表", "关联订单号查询"],
+      "description": "查询订单的商品明细"
+    },
+    {
+      "id": "A06",
+      "category": "single_table",
+      "name": "库存查询",
+      "query": "商品ID为10086的库存数量",
+      "expected_datasource": "doris",
+      "expected_tables": ["ods_products"],
+      "expected_sql_pattern": "SELECT stock FROM ods_products WHERE product_id = 10086",
+      "validation_rules": ["使用ods_products表", "返回stock字段"],
+      "description": "查询指定商品的可用库存"
+    },
+    {
+      "id": "A07",
+      "category": "single_table",
+      "name": "商品列表-按类目筛选",
+      "query": "类目ID为5的所有商品",
+      "expected_datasource": "doris",
+      "expected_tables": ["dim_product"],
+      "expected_sql_pattern": "SELECT * FROM dim_product WHERE category_id = 5 AND status = 1",
+      "validation_rules": ["使用dim_product表", "WHERE category_id = 5", "包含上架状态筛选"],
+      "description": "查询指定类目下的所有商品"
+    },
+    {
+      "id": "A08",
+      "category": "single_table",
+      "name": "用户等级统计",
+      "query": "各等级用户分别有多少人",
+      "expected_datasource": "doris",
+      "expected_tables": ["ods_users"],
+      "expected_sql_pattern": "SELECT user_level, COUNT(*) as count FROM ods_users GROUP BY user_level",
+      "validation_rules": ["使用ods_users表", "GROUP BY user_level", "COUNT聚合"],
+      "description": "按用户等级统计人数"
+    },
+    {
+      "id": "B01",
+      "category": "aggregation",
+      "name": "昨日销售额",
+      "query": "昨天总销售额是多少",
+      "expected_datasource": "doris",
+      "expected_tables": ["dws_sales_daily"],
+      "expected_sql_pattern": "SELECT SUM(gmv) as gmv FROM dws_sales_daily WHERE stat_date = DATE_SUB(CURRENT_DATE, 1)",
+      "validation_rules": ["使用dws_sales_daily表", "SUM(gmv)", "日期为昨天"],
+      "description": "查询昨日销售总额"
+    },
+    {
+      "id": "B02",
+      "category": "aggregation",
+      "name": "省份销售额分布",
+      "query": "本月各省份销售额分别是多少",
+      "expected_datasource": "doris",
+      "expected_tables": ["dws_sales_daily"],
+      "expected_sql_pattern": "SELECT province_id, SUM(gmv) as gmv FROM dws_sales_daily WHERE YEAR(stat_date) = YEAR(CURRENT_DATE) AND MONTH(stat_date) = MONTH(CURRENT_DATE) GROUP BY province_id",
+      "validation_rules": ["使用dws_sales_daily表", "SUM(gmv)聚合", "GROUP BY province_id", "本月时间范围"],
+      "description": "按省份分组统计本月销售额"
+    },
+    {
+      "id": "B03",
+      "category": "aggregation",
+      "name": "同比增长率",
+      "query": "今年销售额同比去年增长了多少",
+      "expected_datasource": "doris",
+      "expected_tables": ["ads_sales_kpi"],
+      "expected_sql_pattern": "SELECT kpi_value, yoy_growth FROM ads_sales_kpi WHERE kpi_name = 'GMV' AND YEAR(stat_date) = YEAR(CURRENT_DATE)",
+      "validation_rules": ["使用ads_sales_kpi表", "包含yoy_growth字段", "kpi_name='GMV'"],
+      "description": "计算今年销售额同比增长率"
+    },
+    {
+      "id": "B04",
+      "category": "aggregation",
+      "name": "品类占比",
+      "query": "各品类销售额占比分别是多少",
+      "expected_datasource": "doris",
+      "expected_tables": ["dws_sales_daily"],
+      "expected_sql_pattern": "SELECT category_id, SUM(gmv) as gmv, SUM(gmv) / (SELECT SUM(gmv) FROM dws_sales_daily) as ratio FROM dws_sales_daily GROUP BY category_id",
+      "validation_rules": ["使用dws_sales_daily表", "SUM(gmv)聚合", "计算占比"],
+      "description": "计算各品类销售额占总销售额的比例"
+    },
+    {
+      "id": "B05",
+      "category": "aggregation",
+      "name": "7日订单趋势",
+      "query": "近7天每日订单量趋势",
+      "expected_datasource": "doris",
+      "expected_tables": ["dws_sales_daily"],
+      "expected_sql_pattern": "SELECT stat_date, SUM(order_count) as orders FROM dws_sales_daily WHERE stat_date >= DATE_SUB(CURRENT_DATE, 7) GROUP BY stat_date ORDER BY stat_date",
+      "validation_rules": ["使用dws_sales_daily表", "SUM(order_count)", "近7天时间范围", "按日期排序"],
+      "description": "查询最近7天每日订单数量"
+    },
+    {
+      "id": "B06",
+      "category": "aggregation",
+      "name": "大区销售对比",
+      "query": "华东和华北地区的销售额对比",
+      "expected_datasource": "doris",
+      "expected_tables": ["dws_sales_daily"],
+      "expected_sql_pattern": "SELECT province_id, SUM(gmv) as gmv FROM dws_sales_daily WHERE province_id IN (华东省份列表) OR province_id IN (华北省份列表) GROUP BY province_id",
+      "validation_rules": ["使用dws_sales_daily表", "关联dim_region筛选地区", "SUM(gmv)聚合"],
+      "description": "对比华东和华北地区的销售情况"
+    },
+    {
+      "id": "B07",
+      "category": "aggregation",
+      "name": "TOP10商品",
+      "query": "上月销售额TOP10的商品有哪些",
+      "expected_datasource": "doris",
+      "expected_tables": ["dwd_order_detail"],
+      "expected_sql_pattern": "SELECT product_id, SUM(pay_amount) as gmv FROM dwd_order_detail WHERE YEAR(order_date) = YEAR(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH)) AND MONTH(order_date) = MONTH(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH)) GROUP BY product_id ORDER BY gmv DESC LIMIT 10",
+      "validation_rules": ["使用dwd_order_detail表", "SUM(pay_amount)聚合", "ORDER BY gmv DESC", "LIMIT 10", "上月时间范围"],
+      "description": "查询上月销售额最高的10个商品"
+    },
+    {
+      "id": "B08",
+      "category": "aggregation",
+      "name": "平均客单价",
+      "query": "用户的平均客单价是多少",
+      "expected_datasource": "doris",
+      "expected_tables": ["dws_sales_daily"],
+      "expected_sql_pattern": "SELECT SUM(gmv) / COUNT(DISTINCT order_user_count) as avg_order_value FROM dws_sales_daily",
+      "validation_rules": ["使用dws_sales_daily表", "客单价=GMV/用户数", "COUNT DISTINCT order_user_count"],
+      "description": "计算所有用户的平均订单金额"
+    },
+    {
+      "id": "C01",
+      "category": "join",
+      "name": "用户总消费",
+      "query": "每个用户的总消费金额是多少",
+      "expected_datasource": "doris",
+      "expected_tables": ["dwd_order_detail"],
+      "expected_sql_pattern": "SELECT user_id, SUM(pay_amount) as total_spent FROM dwd_order_detail GROUP BY user_id ORDER BY total_spent DESC",
+      "validation_rules": ["使用dwd_order_detail表", "SUM(pay_amount)聚合", "GROUP BY user_id"],
+      "description": "统计每个用户的总消费金额"
+    },
+    {
+      "id": "C02",
+      "category": "join",
+      "name": "品类销售详情",
+      "query": "各品类下商品的销售情况如何",
+      "expected_datasource": "doris",
+      "expected_tables": ["dwd_order_detail"],
+      "expected_sql_pattern": "SELECT category_id, SUM(quantity) as qty, SUM(pay_amount) as amount FROM dwd_order_detail GROUP BY category_id",
+      "validation_rules": ["使用dwd_order_detail表", "GROUP BY category_id", "SUM数量和金额"],
+      "description": "按品类统计销售数量和金额"
+    },
+    {
+      "id": "C03",
+      "category": "join",
+      "name": "地区用户订单",
+      "query": "北京用户的订单明细",
+      "expected_datasource": "doris",
+      "expected_tables": ["dwd_order_detail"],
+      "expected_sql_pattern": "SELECT * FROM dwd_order_detail WHERE province_id IN (SELECT region_id FROM dim_region WHERE region_name LIKE '%北京%')",
+      "validation_rules": ["使用dwd_order_detail表", "关联dim_region筛选北京地区"],
+      "description": "筛选北京地区用户的订单明细"
+    },
+    {
+      "id": "C04",
+      "category": "join",
+      "name": "VIP用户消费",
+      "query": "VIP用户的平均订单金额是多少",
+      "expected_datasource": "doris",
+      "expected_tables": ["dwd_order_detail"],
+      "expected_sql_pattern": "SELECT AVG(pay_amount) as avg_amount FROM dwd_order_detail WHERE user_id IN (SELECT user_id FROM ods_users WHERE user_level >= 2)",
+      "validation_rules": ["使用dwd_order_detail表关联ods_users", "筛选VIP用户", "AVG聚合"],
+      "description": "计算VIP用户的平均订单金额"
+    },
+    {
+      "id": "C05",
+      "category": "join",
+      "name": "商品退货率",
+      "query": "每个商品的退货率是多少",
+      "expected_datasource": "doris",
+      "expected_tables": ["dwd_order_detail"],
+      "expected_sql_pattern": "SELECT product_id, COUNT(CASE WHEN order_status = 5 THEN 1 END) * 1.0 / COUNT(*) as return_rate FROM dwd_order_detail GROUP BY product_id",
+      "validation_rules": ["使用dwd_order_detail表", "order_status=5表示已取消/退货", "退货率=退货数/总数"],
+      "description": "计算各商品的退货比例"
+    },
+    {
+      "id": "C06",
+      "category": "join",
+      "name": "高频用户识别",
+      "query": "近30天下单超过3次的高频用户有哪些",
+      "expected_datasource": "doris",
+      "expected_tables": ["dwd_order_detail"],
+      "expected_sql_pattern": "SELECT user_id, COUNT(DISTINCT order_id) as order_count FROM dwd_order_detail WHERE order_date >= DATE_SUB(CURRENT_DATE, 30) GROUP BY user_id HAVING order_count > 3",
+      "validation_rules": ["使用dwd_order_detail表", "COUNT DISTINCT order_id", "HAVING > 3", "近30天"],
+      "description": "查询近期下单次数超过3次的用户"
+    },
+    {
+      "id": "D01",
+      "category": "user_analytics",
+      "name": "本月新增用户",
+      "query": "本月新增用户数是多少",
+      "expected_datasource": "doris",
+      "expected_tables": ["dws_user_stats"],
+      "expected_sql_pattern": "SELECT SUM(new_users) as total_new FROM dws_user_stats WHERE YEAR(stat_date) = YEAR(CURRENT_DATE) AND MONTH(stat_date) = MONTH(CURRENT_DATE)",
+      "validation_rules": ["使用dws_user_stats表", "SUM(new_users)", "本月时间范围"],
+      "description": "统计本月新注册用户数量"
+    },
+    {
+      "id": "D02",
+      "category": "user_analytics",
+      "name": "高频活跃用户",
+      "query": "近30天每天都登录的用户有多少",
+      "expected_datasource": "doris",
+      "expected_tables": ["dws_user_stats"],
+      "expected_sql_pattern": "SELECT COUNT(*) as daily_active_users FROM dws_user_stats WHERE stat_date >= DATE_SUB(CURRENT_DATE, 30) AND active_users > 0",
+      "validation_rules": ["使用dws_user_stats表", "active_users字段", "近30天范围"],
+      "description": "查询近30天每日活跃用户数"
+    },
+    {
+      "id": "D03",
+      "category": "user_analytics",
+      "name": "用户增长趋势",
+      "query": "用户增长趋势如何",
+      "expected_datasource": "doris",
+      "expected_tables": ["dws_user_stats"],
+      "expected_sql_pattern": "SELECT stat_date, new_users, total_users FROM dws_user_stats ORDER BY stat_date DESC LIMIT 30",
+      "validation_rules": ["使用dws_user_stats表", "返回new_users和total_users", "按日期排序"],
+      "description": "分析用户增长趋势"
+    },
+    {
+      "id": "D04",
+      "category": "user_analytics",
+      "name": "日活跃用户",
+      "query": "近7天的日活跃用户(DAU)是多少",
+      "expected_datasource": "doris",
+      "expected_tables": ["dws_user_stats"],
+      "expected_sql_pattern": "SELECT stat_date, active_users FROM dws_user_stats WHERE stat_date >= DATE_SUB(CURRENT_DATE, 7) ORDER BY stat_date",
+      "validation_rules": ["使用dws_user_stats表", "active_users字段", "近7天"],
+      "description": "查询近7天的日活跃用户数"
+    },
+    {
+      "id": "E01",
+      "category": "clarification",
+      "name": "时间范围缺失",
+      "query": "销售额怎么样",
+      "expected_behavior": "触发澄清",
+      "missing_info": "时间范围不明确（今天/昨天/本月/今年？）",
+      "clarification_prompt": "请问您想查询哪个时间段的销售额？",
+      "description": "歧义检测 - 缺少时间范围"
+    },
+    {
+      "id": "E02",
+      "category": "clarification",
+      "name": "指标不明确",
+      "query": "北京的数据",
+      "expected_behavior": "触发澄清",
+      "missing_info": "未指定查询什么指标（销售额/用户数/订单量？）",
+      "clarification_prompt": "请问您想查询北京的什么数据？（如销售额、用户数、订单量等）",
+      "description": "指标不明确"
+    },
+    {
+      "id": "E03",
+      "category": "clarification",
+      "name": "时间表述模糊",
+      "query": "最近的数据",
+      "expected_behavior": "触发澄清",
+      "missing_info": "最近是多久（最近7天/30天/3个月？）",
+      "clarification_prompt": "请问'最近'是指多长时间？（如最近7天、30天、3个月）",
+      "description": "时间表述模糊"
+    },
+    {
+      "id": "E04",
+      "category": "clarification",
+      "name": "维度不明确",
+      "query": "按维度统计一下",
+      "expected_behavior": "触发澄清",
+      "missing_info": "未指定按什么维度统计（时间/地区/品类/用户等级？）",
+      "clarification_prompt": "请问您想按什么维度统计？（如时间、地区、品类、用户等级）",
+      "description": "维度不明确"
+    }
+  ]
+}

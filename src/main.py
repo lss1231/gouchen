@@ -10,14 +10,18 @@ from pathlib import Path
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
-    # Startup: Initialize schema store
+    # Startup: Initialize schema store (Doris only)
     print("Initializing schema store...")
-    schema_path = Path("data/schema/ecommerce_schema.json")
+    schema_path = Path("data/schema/doris_schema_enhanced.json")
     if schema_path.exists():
         tables = load_tables_from_json(schema_path)
+        # Filter only doris tables
+        doris_tables = [t for t in tables if str(t.datasource) == "doris"]
         store = get_schema_store()
-        store.index_tables(tables)
-        print(f"Indexed {len(tables)} tables")
+        store.index_tables(doris_tables)
+        print(f"Indexed {len(doris_tables)} Doris tables")
+    else:
+        print(f"Warning: Schema file not found: {schema_path}")
     yield
     # Shutdown
     print("Shutting down...")

@@ -1,0 +1,370 @@
+{
+  "timestamp": "2026-04-09T15:14:31.934702",
+  "summary": {
+    "total": 30,
+    "passed": 0,
+    "failed": 30
+  },
+  "results": [
+    {
+      "case_id": "A01",
+      "query": "订单号ORD2024010110000000001的详情",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4120
+    },
+    {
+      "case_id": "A02",
+      "query": "手机号13800138000的用户信息",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 5568
+    },
+    {
+      "case_id": "A03",
+      "query": "iPhone 16 Pro的价格是多少",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4057
+    },
+    {
+      "case_id": "A04",
+      "query": "用户ID为12345的所有订单",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4119
+    },
+    {
+      "case_id": "A05",
+      "query": "订单ORD2024010110000000001的明细有哪些商品",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4082
+    },
+    {
+      "case_id": "A06",
+      "query": "商品ID为10086的库存数量",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4118
+    },
+    {
+      "case_id": "A07",
+      "query": "类目ID为5的所有商品",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4106
+    },
+    {
+      "case_id": "A08",
+      "query": "各等级用户分别有多少人",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4096
+    },
+    {
+      "case_id": "B01",
+      "query": "昨天总销售额是多少",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4099
+    },
+    {
+      "case_id": "B02",
+      "query": "本月各省份销售额分别是多少",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4106
+    },
+    {
+      "case_id": "B03",
+      "query": "今年销售额同比去年增长了多少",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4104
+    },
+    {
+      "case_id": "B04",
+      "query": "各品类销售额占比分别是多少",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4070
+    },
+    {
+      "case_id": "B05",
+      "query": "近7天每日订单量趋势",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4098
+    },
+    {
+      "case_id": "B06",
+      "query": "华东和华北地区的销售额对比",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4103
+    },
+    {
+      "case_id": "B07",
+      "query": "上月销售额TOP10的商品有哪些",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4112
+    },
+    {
+      "case_id": "B08",
+      "query": "用户的平均客单价是多少",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4092
+    },
+    {
+      "case_id": "C01",
+      "query": "每个用户的总消费金额是多少",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4101
+    },
+    {
+      "case_id": "C02",
+      "query": "各品类下商品的销售情况如何",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4101
+    },
+    {
+      "case_id": "C03",
+      "query": "北京用户的订单明细",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4092
+    },
+    {
+      "case_id": "C04",
+      "query": "VIP用户的平均订单金额是多少",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4130
+    },
+    {
+      "case_id": "C05",
+      "query": "每个商品的退货率是多少",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4088
+    },
+    {
+      "case_id": "C06",
+      "query": "近30天下单超过3次的高频用户有哪些",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4102
+    },
+    {
+      "case_id": "D01",
+      "query": "本月新增用户数是多少",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4126
+    },
+    {
+      "case_id": "D02",
+      "query": "近30天每天都登录的用户有多少",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4102
+    },
+    {
+      "case_id": "D03",
+      "query": "用户增长趋势如何",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4088
+    },
+    {
+      "case_id": "D04",
+      "query": "近7天的日活跃用户(DAU)是多少",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4116
+    },
+    {
+      "case_id": "E01",
+      "query": "销售额怎么样",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4102
+    },
+    {
+      "case_id": "E02",
+      "query": "北京的数据",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4117
+    },
+    {
+      "case_id": "E03",
+      "query": "最近的数据",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4103
+    },
+    {
+      "case_id": "E04",
+      "query": "按维度统计一下",
+      "passed": false,
+      "actual_datasource": null,
+      "actual_tables": [],
+      "generated_sql": null,
+      "errors": [
+        "无法连接到API服务，请确认服务是否运行在 http://localhost:8000"
+      ],
+      "execution_time_ms": 4116
+    }
+  ]
+}

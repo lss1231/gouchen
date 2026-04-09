@@ -62,3 +62,11 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Deprecated - old files kept for reference but not tracked
+**/deprecated/
+*.deprecated
+
+# Backup files
+*.backup
+*~.bak
