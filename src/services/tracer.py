@@ -103,7 +103,7 @@ class QueryTracer:
         for day_dir in sorted(self._log_dir.iterdir(), reverse=True):
             if not day_dir.is_dir():
                 continue
-            for file_path in sorted(day_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
+            for file_path in sorted(day_dir.iterdir(), key=lambda p: (p.stat().st_mtime, p.name), reverse=True):
                 try:
                     trace = json.loads(file_path.read_text(encoding="utf-8"))
                     traces.append(trace)
