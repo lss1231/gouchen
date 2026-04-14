@@ -46,9 +46,10 @@ def validate_sql_safety(sql: str) -> tuple[bool, str]:
     except Exception as e:
         return False, f"SQL parsing error: {str(e)}"
 
-    # Additional keyword check
+    # Additional keyword check (use word boundaries to avoid false positives)
+    import re
     for keyword in FORBIDDEN_KEYWORDS:
-        if keyword in sql_lower:
+        if re.search(r"\b" + re.escape(keyword) + r"\b", sql_lower):
             return False, f"SQL contains forbidden keyword: {keyword}"
 
     return True, ""

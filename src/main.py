@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
     if schema_path.exists():
         tables = load_tables_from_json(schema_path)
         # Filter only doris tables
-        doris_tables = [t for t in tables if str(t.datasource) == "doris"]
+        doris_tables = [t for t in tables if t.datasource == "doris"]
         store = get_schema_store()
         store.index_tables(doris_tables)
         print(f"Indexed {len(doris_tables)} Doris tables")

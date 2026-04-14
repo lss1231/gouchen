@@ -1,5 +1,9 @@
 """Schema embedding service using Qdrant for vector storage."""
+import os
 from typing import List, Optional
+
+# Force Hugging Face offline mode to avoid network requests on startup.
+# The model is already cached locally; this suppresses the HF Hub check.
 
 from ..models import TableMetadata
 from ..config import get_settings
@@ -20,13 +24,28 @@ class SchemaEmbeddingService:
     def _get_model(self):
         """Lazy load the embedding model."""
         if self._model is None:
+            # Suppress the background auto_conversion thread that phones home.
+            # The model is already cached locally; we don't need HF Hub calls.
+            os.environ["HF_HUB_OFFLINE"] = "1"
+            os.environ["TRANSFORMERS_OFFLINE"] = "1"
+
+            try:
+                import transformers.safetensors_conversion as _stc
+
+                _stc.auto_conversion = lambda *args, **kwargs: None
+            except Exception:
+                pass
+
             try:
                 from sentence_transformers import SentenceTransformer
             except ImportError:
                 raise ImportError("sentence-transformers is not installed")
 
             print(f"Loading embedding model: {self._embedding_model_name}...")
-            self._model = SentenceTransformer(self._embedding_model_name)
+            self._model = SentenceTransformer(
+                self._embedding_model_name,
+                local_files_only=True,
+            )
         return self._model
 
     def _get_qdrant_client(self):

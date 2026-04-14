@@ -118,14 +118,19 @@ def validate_sql_safety(sql: str) -> tuple[bool, str]:
     """Validate SQL for safety issues."""
     sql_lower = sql.lower().strip()
 
-    # Check for forbidden keywords
-    for keyword in FORBIDDEN_KEYWORDS:
-        if keyword in sql_lower:
-            return False, f"SQL contains forbidden keyword: {keyword}"
-
     # Must start with SELECT or WITH (CTE)
     if not (sql_lower.startswith("select") or sql_lower.startswith("with")):
         return False, "SQL must start with SELECT or WITH"
+
+    # Check for forbidden keywords using word boundaries to avoid false positives
+    # (e.g., "create_time" should not trigger a match for "create")
+    for keyword in FORBIDDEN_KEYWORDS:
+        # Simple in-string check for patterns that are not words
+        if not re.search(r"\b" + re.escape(keyword) + r"\b", sql_lower):
+            continue
+        # Extra check: ensure it is not part of a common benign field name
+        # like create_time / update_time (handled by \b for underscore)
+        return False, f"SQL contains forbidden keyword: {keyword}"
 
     # Check for multiple statements
     if ";" in sql and not sql_lower.endswith(";"):
