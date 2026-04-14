@@ -1,6 +1,9 @@
 """Tests for schema store."""
-import pytest
+
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from src.services.schema_store import SchemaStore, get_schema_store, load_tables_from_json
 
@@ -16,9 +19,9 @@ class TestSchemaStore:
     @pytest.fixture
     def store(self, schema_path):
         """Create a SchemaStore with loaded tables."""
-        store = SchemaStore(use_vector_search=False)  # Disable vector search for unit tests
+        store = SchemaStore()
         tables = load_tables_from_json(schema_path)
-        store.index_tables(tables)
+        store._tables = tables
         return store
 
     def test_load_tables_from_json(self, schema_path):
@@ -32,90 +35,61 @@ class TestSchemaStore:
         assert "dwd_order_detail" in table_names
         assert "dws_sales_daily" in table_names
 
-    def test_extract_keywords_time_terms(self, store):
-        """Test keyword extraction for time-related terms."""
-        query = "上个月销售额"
-        keywords = store._extract_keywords(query)
+    def test_index_tables_builds_vector_index(self, store):
+        """Test index_tables triggers vector index build."""
+        mock_service = MagicMock()
 
-        assert "上个月" in keywords
-        assert "date" in keywords
-        assert "month" in keywords
+        with patch("src.services.schema_embedding.SchemaEmbeddingService", return_value=mock_service):
+            store._embedding_service = None
+            store.index_tables(store._tables)
+            mock_service.build_index.assert_called_once_with(store._tables)
 
-    def test_extract_keywords_metric_terms(self, store):
-        """Test keyword extraction for metric terms."""
-        query = "销售额和订单"
-        keywords = store._extract_keywords(query)
+    def test_index_tables_raises_on_build_failure(self, store):
+        """Test index_tables raises RuntimeError when vector index build fails."""
+        mock_service = MagicMock()
+        mock_service.build_index.side_effect = ConnectionError("Qdrant down")
 
-        assert "销售额" in keywords
-        assert "订单" in keywords
-        assert "amount" in keywords
-        assert "order" in keywords
+        with patch("src.services.schema_embedding.SchemaEmbeddingService", return_value=mock_service):
+            store._embedding_service = None
+            with pytest.raises(RuntimeError, match="Failed to build vector index"):
+                store.index_tables(store._tables)
 
-    def test_extract_keywords_dimension_terms(self, store):
-        """Test keyword extraction for dimension terms."""
-        query = "华东地区"
-        keywords = store._extract_keywords(query)
+    def test_search_uses_vector_search(self, store):
+        """Test search delegates to vector search."""
+        mock_service = MagicMock()
+        mock_service.search.return_value = store._tables[:2]
 
-        assert "华东" in keywords
-        assert "region" in keywords
+        with patch("src.services.schema_embedding.SchemaEmbeddingService", return_value=mock_service):
+            store._embedding_service = None
+            results = store.search("上个月销售额", top_k=2)
 
-    def test_score_table_table_name_match(self, store):
-        """Test that table name matches score higher."""
-        tables = store._tables
-        dwd_order = next(t for t in tables if t.table_name == "dwd_order_detail")
+        mock_service.search.assert_called_once_with("上个月销售额", 2)
+        assert len(results) == 2
 
-        # Table name match should score 3.0
-        score = store._score_table(dwd_order, ["order"])
-        assert score >= 3.0
+    def test_search_raises_when_vector_search_fails(self, store):
+        """Test search raises RuntimeError when vector search fails."""
+        mock_service = MagicMock()
+        mock_service.search.side_effect = ConnectionError("Qdrant unreachable")
 
-        # Field match should score 1.0
-        score = store._score_table(dwd_order, ["pay"])
-        assert score >= 1.0
+        with patch("src.services.schema_embedding.SchemaEmbeddingService", return_value=mock_service):
+            store._embedding_service = None
+            with pytest.raises(RuntimeError, match="Vector search failed"):
+                store.search("上个月销售额")
 
-    def test_search_returns_order_detail_for_sales_query(self, store):
-        """Test '上个月销售额' returns dwd_order_detail table."""
-        results = store.search("上个月销售额")
+    def test_retrieve_delegates_to_search(self, store):
+        """Test retrieve delegates to search."""
+        mock_service = MagicMock()
+        mock_service.search.return_value = store._tables[:1]
 
-        table_names = [t.table_name for t in results]
-        assert "dwd_order_detail" in table_names or "dws_sales_daily" in table_names
+        with patch("src.services.schema_embedding.SchemaEmbeddingService", return_value=mock_service):
+            store._embedding_service = None
+            results = store.retrieve("订单金额", top_k=1)
 
-    def test_search_returns_dim_region_for_region_query(self, store):
-        """Test '地区维度' returns dim_region table."""
-        results = store.search("地区维度省份城市")
-
-        table_names = [t.table_name for t in results]
-        assert "dim_region" in table_names
-
-    def test_search_returns_empty_for_no_match(self, store):
-        """Test search returns empty list when no tables match."""
-        results = store.search("完全不相关的查询xyz123")
-        assert results == []
-
-    def test_search_respects_top_k(self, store):
-        """Test search respects top_k parameter."""
-        results = store.search("订单销售额", top_k=2)
-        assert len(results) <= 2
+        mock_service.search.assert_called_once_with("订单金额", 1)
+        assert len(results) == 1
 
     def test_get_schema_store_singleton(self):
         """Test get_schema_store returns singleton."""
         store1 = get_schema_store()
         store2 = get_schema_store()
         assert store1 is store2
-
-    def test_search_comprehensive_query(self, store):
-        """Test search with comprehensive query."""
-        results = store.search("近7天各省份的订单金额")
-
-        table_names = [t.table_name for t in results]
-        # Should include dws_sales_daily for province aggregation
-        assert "dws_sales_daily" in table_names or "dwd_order_detail" in table_names
-
-    def test_score_table_with_multiple_keywords(self, store):
-        """Test scoring with multiple keywords."""
-        tables = store._tables
-        dwd_order = next(t for t in tables if t.table_name == "dwd_order_detail")
-
-        # Multiple matches should accumulate
-        score = store._score_table(dwd_order, ["order", "pay", "user"])
-        # order = 3.0 (table name), pay = 1.0, user = 1.0
-        assert score >= 5.0
