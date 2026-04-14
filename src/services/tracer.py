@@ -1,0 +1,134 @@
+"""Query trace logging service for node-level observability."""
+
+import json
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+
+class QueryTracer:
+    """Service for logging fine-grained query execution traces."""
+
+    def __init__(self, log_dir: Optional[Path] = None):
+        if log_dir is None:
+            log_dir = Path(__file__).parent.parent.parent / "data" / "traces"
+        self._log_dir = log_dir
+        self._log_dir.mkdir(parents=True, exist_ok=True)
+
+    def _trace_path(self, trace_id: str) -> Path:
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        day_dir = self._log_dir / date_str
+        day_dir.mkdir(parents=True, exist_ok=True)
+        return day_dir / f"{trace_id}.json"
+
+    def _now_iso(self) -> str:
+        return datetime.now().isoformat()
+
+    def start_trace(self, trace_id: str, query: str, user_role: str) -> None:
+        trace = {
+            "trace_id": trace_id,
+            "query": query,
+            "user_role": user_role,
+            "start_time": self._now_iso(),
+            "end_time": None,
+            "status": "running",
+            "events": [
+                {
+                    "timestamp": self._now_iso(),
+                    "event_type": "trace_started",
+                    "node_name": "api",
+                }
+            ],
+            "final_state": None,
+        }
+        path = self._trace_path(trace_id)
+        path.write_text(json.dumps(trace, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def log_node_event(
+        self,
+        trace_id: str,
+        node_name: str,
+        event_type: str,
+        state_snapshot: Optional[Dict[str, Any]] = None,
+        error: Optional[str] = None,
+    ) -> None:
+        path = self._trace_path(trace_id)
+        if not path.exists():
+            return
+
+        trace = json.loads(path.read_text(encoding="utf-8"))
+        event = {
+            "timestamp": self._now_iso(),
+            "event_type": event_type,
+            "node_name": node_name,
+        }
+        if state_snapshot is not None:
+            event["state_snapshot"] = _safe_snapshot(state_snapshot)
+        if error is not None:
+            event["error"] = error
+        trace["events"].append(event)
+        path.write_text(json.dumps(trace, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def finish_trace(
+        self,
+        trace_id: str,
+        status: str,
+        final_state: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        path = self._trace_path(trace_id)
+        if not path.exists():
+            return
+
+        trace = json.loads(path.read_text(encoding="utf-8"))
+        trace["status"] = status
+        trace["end_time"] = self._now_iso()
+        if final_state is not None:
+            trace["final_state"] = _safe_snapshot(final_state)
+        trace["events"].append({
+            "timestamp": self._now_iso(),
+            "event_type": "trace_finished",
+            "node_name": "api",
+            "state_snapshot": _safe_snapshot(final_state) if final_state else None,
+        })
+        path.write_text(json.dumps(trace, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def get_trace(self, trace_id: str) -> Optional[Dict[str, Any]]:
+        path = self._trace_path(trace_id)
+        if not path.exists():
+            return None
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    def list_traces(self, limit: int = 100) -> List[Dict[str, Any]]:
+        traces = []
+        for day_dir in sorted(self._log_dir.iterdir(), reverse=True):
+            if not day_dir.is_dir():
+                continue
+            for file_path in sorted(day_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
+                try:
+                    trace = json.loads(file_path.read_text(encoding="utf-8"))
+                    traces.append(trace)
+                except (json.JSONDecodeError, OSError):
+                    continue
+                if len(traces) >= limit:
+                    break
+            if len(traces) >= limit:
+                break
+        return traces
+
+
+def _safe_snapshot(state: Dict[str, Any]) -> Dict[str, Any]:
+    """Create a JSON-safe snapshot of state, dropping non-serializable values."""
+    try:
+        return json.loads(json.dumps(state, ensure_ascii=False, default=str))
+    except (TypeError, ValueError):
+        return {"_snapshot_error": "failed to serialize state"}
+
+
+_tracer: Optional[QueryTracer] = None
+
+
+def get_tracer(log_dir: Optional[Path] = None) -> QueryTracer:
+    global _tracer
+    if _tracer is None:
+        _tracer = QueryTracer(log_dir)
+    return _tracer
