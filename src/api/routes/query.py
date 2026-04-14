@@ -1,11 +1,12 @@
 """Query API endpoints using LangGraph with HITL interrupt and clarification."""
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 
 from ...graph.builder import get_graph
+from ...services.tracer import get_tracer
 
 router = APIRouter()
 
@@ -56,6 +57,18 @@ class StatusResponse(BaseModel):
     error: Optional[str] = None
 
 
+class TraceSummary(BaseModel):
+    trace_id: str
+    query: str
+    status: str
+    start_time: str
+    end_time: Optional[str] = None
+
+
+class TraceListResponse(BaseModel):
+    traces: List[TraceSummary]
+
+
 @router.post("/query", response_model=QueryResponse)
 async def create_query(request: QueryRequest) -> QueryResponse:
     """
@@ -71,6 +84,10 @@ async def create_query(request: QueryRequest) -> QueryResponse:
     7. Format result
     """
     try:
+        import time
+        tracer = get_tracer()
+        tracer.start_trace(request.thread_id, request.query, request.user_role)
+
         graph = get_graph()
         config = {
             "configurable": {
@@ -78,7 +95,7 @@ async def create_query(request: QueryRequest) -> QueryResponse:
             }
         }
 
-        # Initial state with clarification defaults
+        start_time = time.time()
         initial_state = {
             "query": request.query,
             "thread_id": request.thread_id,
@@ -92,8 +109,7 @@ async def create_query(request: QueryRequest) -> QueryResponse:
             "execution_result": None,
             "error": None,
             "audit_log_id": None,
-            "start_time": None,
-            # Clarification fields
+            "start_time": start_time,
             "clarification_needed": False,
             "clarification_questions": [],
             "clarification_responses": [],
@@ -102,13 +118,10 @@ async def create_query(request: QueryRequest) -> QueryResponse:
             "current_clarification_round": 0,
         }
 
-        # Invoke graph
         result = graph.invoke(initial_state, config)
-
-        # Check if interrupted at clarification
         state = graph.get_state(config)
+
         if state.next and "clarification" in str(state.next):
-            # Get questions from interrupt payload in tasks
             questions = []
             for task in state.tasks:
                 if hasattr(task, 'interrupts') and task.interrupts:
@@ -117,23 +130,28 @@ async def create_query(request: QueryRequest) -> QueryResponse:
                             questions = interrupt['questions']
                             break
 
-            # Fallback to state values if not found in interrupts
             if not questions:
                 questions = result.get("clarification_questions", [])
 
+            clarification_info = {
+                "round": result.get("current_clarification_round", 1),
+                "max_rounds": result.get("max_clarification_rounds", 3),
+                "questions": questions,
+                "current_intent": result.get("intent"),
+                "message": "查询存在歧义，需要澄清",
+            }
+            tracer.log_node_event(
+                trace_id=request.thread_id,
+                node_name="api",
+                event_type="interrupt",
+                state_snapshot={"status": "needs_clarification", "clarification_info": clarification_info},
+            )
             return QueryResponse(
                 status="needs_clarification",
                 thread_id=request.thread_id,
-                clarification_info={
-                    "round": result.get("current_clarification_round", 1),
-                    "max_rounds": result.get("max_clarification_rounds", 3),
-                    "questions": questions,
-                    "current_intent": result.get("intent"),
-                    "message": "查询存在歧义，需要澄清",
-                },
+                clarification_info=clarification_info,
             )
 
-        # Check if interrupted at review
         if state.next and "review" in str(state.next):
             pending_info = {
                 "query": result.get("query", request.query),
@@ -141,14 +159,20 @@ async def create_query(request: QueryRequest) -> QueryResponse:
                 "sql_explanation": result.get("sql_explanation"),
                 "message": "SQL generated and pending approval. Use /api/v1/approve to approve or reject.",
             }
+            tracer.log_node_event(
+                trace_id=request.thread_id,
+                node_name="api",
+                event_type="interrupt",
+                state_snapshot={"status": "pending_approval", "pending_info": pending_info},
+            )
             return QueryResponse(
                 status="pending_approval",
                 thread_id=request.thread_id,
                 pending_info=pending_info,
             )
 
-        # Graph completed
         formatted_result = result.get("formatted_result")
+        tracer.finish_trace(request.thread_id, "completed", result)
         return QueryResponse(
             status="completed",
             thread_id=request.thread_id,
@@ -166,10 +190,16 @@ async def create_query(request: QueryRequest) -> QueryResponse:
 
     except Exception as e:
         import traceback
+        error_msg = f"Query processing failed: {str(e)}\n{traceback.format_exc()}"
+        try:
+            tracer = get_tracer()
+            tracer.finish_trace(request.thread_id, "error", {"error": error_msg})
+        except Exception:
+            pass
         return QueryResponse(
             status="error",
             thread_id=request.thread_id,
-            error=f"Query processing failed: {str(e)}\n{traceback.format_exc()}",
+            error=error_msg,
         )
 
 
@@ -185,6 +215,14 @@ async def clarify_query(request: ClarifyRequest) -> QueryResponse:
         QueryResponse with status and result
     """
     try:
+        tracer = get_tracer()
+        tracer.log_node_event(
+            trace_id=request.thread_id,
+            node_name="api",
+            event_type="resume",
+            state_snapshot={"action": "clarification_response", "answers": [a.model_dump() for a in request.answers]},
+        )
+
         graph = get_graph()
         config = {
             "configurable": {
@@ -192,19 +230,16 @@ async def clarify_query(request: ClarifyRequest) -> QueryResponse:
             }
         }
 
-        # Prepare resume payload for clarification
         resume_payload = {
             "action": "clarification_response",
             "answers": [{"field": ans.field, "answer": ans.answer} for ans in request.answers],
         }
 
-        # Continue graph with Command
         result = graph.invoke(
             Command(resume=resume_payload),
             config,
         )
 
-        # Check if more clarification needed
         state = graph.get_state(config)
         if state.next and "clarification" in str(state.next):
             return QueryResponse(
@@ -220,7 +255,6 @@ async def clarify_query(request: ClarifyRequest) -> QueryResponse:
                 },
             )
 
-        # Check if now at review stage
         if state.next and "review" in str(state.next):
             return QueryResponse(
                 status="pending_approval",
@@ -234,8 +268,8 @@ async def clarify_query(request: ClarifyRequest) -> QueryResponse:
                 },
             )
 
-        # Completed
         formatted_result = result.get("formatted_result")
+        tracer.finish_trace(request.thread_id, "completed", result)
         return QueryResponse(
             status="completed",
             thread_id=request.thread_id,
@@ -252,10 +286,15 @@ async def clarify_query(request: ClarifyRequest) -> QueryResponse:
 
     except Exception as e:
         import traceback
+        error_msg = f"Clarification processing failed: {str(e)}\n{traceback.format_exc()}"
+        try:
+            get_tracer().finish_trace(request.thread_id, "error", {"error": error_msg})
+        except Exception:
+            pass
         return QueryResponse(
             status="error",
             thread_id=request.thread_id,
-            error=f"Clarification processing failed: {str(e)}\n{traceback.format_exc()}",
+            error=error_msg,
         )
 
 
@@ -268,6 +307,14 @@ async def approve_query(request: ApproveRequest) -> QueryResponse:
     from the interrupt point.
     """
     try:
+        tracer = get_tracer()
+        tracer.log_node_event(
+            trace_id=request.thread_id,
+            node_name="api",
+            event_type="resume",
+            state_snapshot={"action": request.decision, "edited_sql": request.edited_sql},
+        )
+
         graph = get_graph()
         config = {
             "configurable": {
@@ -275,29 +322,27 @@ async def approve_query(request: ApproveRequest) -> QueryResponse:
             }
         }
 
-        # Prepare resume payload
         resume_payload: Dict[str, Any] = {
             "action": request.decision,
         }
         if request.edited_sql:
             resume_payload["edited_sql"] = request.edited_sql
 
-        # Continue graph with Command
         result = graph.invoke(
             Command(resume=resume_payload),
             config,
         )
 
-        # Check if there was an error
         if result.get("error"):
+            tracer.finish_trace(request.thread_id, "error", result)
             return QueryResponse(
                 status="error",
                 thread_id=request.thread_id,
                 error=result.get("error"),
             )
 
-        # Prepare result with formatted_result and summary
         formatted_result = result.get("formatted_result")
+        tracer.finish_trace(request.thread_id, "completed", result)
         return QueryResponse(
             status="completed",
             thread_id=request.thread_id,
@@ -315,10 +360,15 @@ async def approve_query(request: ApproveRequest) -> QueryResponse:
 
     except Exception as e:
         import traceback
+        error_msg = f"Approval processing failed: {str(e)}\n{traceback.format_exc()}"
+        try:
+            get_tracer().finish_trace(request.thread_id, "error", {"error": error_msg})
+        except Exception:
+            pass
         return QueryResponse(
             status="error",
             thread_id=request.thread_id,
-            error=f"Approval processing failed: {str(e)}\n{traceback.format_exc()}",
+            error=error_msg,
         )
 
 
@@ -378,3 +428,32 @@ async def get_status(thread_id: str) -> StatusResponse:
             status="error",
             error=f"Status check failed: {str(e)}\n{traceback.format_exc()}",
         )
+
+
+@router.get("/traces", response_model=TraceListResponse)
+async def list_traces(limit: int = 100) -> TraceListResponse:
+    """List recent query execution traces."""
+    tracer = get_tracer()
+    traces = tracer.list_traces(limit=limit)
+    return TraceListResponse(
+        traces=[
+            TraceSummary(
+                trace_id=t["trace_id"],
+                query=t["query"],
+                status=t["status"],
+                start_time=t["start_time"],
+                end_time=t.get("end_time"),
+            )
+            for t in traces
+        ]
+    )
+
+
+@router.get("/traces/{trace_id}")
+async def get_trace(trace_id: str):
+    """Get full trace details for a specific query."""
+    tracer = get_tracer()
+    trace = tracer.get_trace(trace_id)
+    if trace is None:
+        raise HTTPException(status_code=404, detail="Trace not found")
+    return trace
