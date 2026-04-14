@@ -119,9 +119,54 @@ class QueryTracer:
 def _safe_snapshot(state: Dict[str, Any]) -> Dict[str, Any]:
     """Create a JSON-safe snapshot of state, dropping non-serializable values."""
     try:
-        return json.loads(json.dumps(state, ensure_ascii=False, default=str))
+        raw = json.loads(json.dumps(state, ensure_ascii=False, default=str))
+        return _prune_snapshot(raw)
     except (TypeError, ValueError):
         return {"_snapshot_error": "failed to serialize state"}
+
+
+def _prune_snapshot(state: Dict[str, Any]) -> Dict[str, Any]:
+    """Prune large fields to keep trace files small and readable."""
+    pruned = dict(state)
+
+    # Relevant tables: keep only table names and descriptions
+    if "relevant_tables" in pruned and isinstance(pruned["relevant_tables"], list):
+        pruned["relevant_tables"] = [
+            {
+                "table_name": t.get("table_name"),
+                "table_cn_name": t.get("table_cn_name"),
+                "description": t.get("description"),
+            }
+            for t in pruned["relevant_tables"]
+            if isinstance(t, dict)
+        ]
+
+    # Execution result: summarize, truncate rows
+    if "execution_result" in pruned and isinstance(pruned["execution_result"], dict):
+        er = pruned["execution_result"]
+        pruned["execution_result"] = {
+            "sql": er.get("sql"),
+            "execution_time_ms": er.get("execution_time_ms"),
+            "row_count": er.get("row_count"),
+            "columns": er.get("columns"),
+            "rows": er.get("rows", [])[:5],
+            "_truncated": len(er.get("rows", [])) > 5,
+        }
+
+    # Formatted result: summarize, truncate rows
+    if "formatted_result" in pruned and isinstance(pruned["formatted_result"], dict):
+        fr = pruned["formatted_result"]
+        pruned["formatted_result"] = {
+            "sql": fr.get("sql"),
+            "execution_time_ms": fr.get("execution_time_ms"),
+            "row_count": fr.get("row_count"),
+            "chart_recommendation": fr.get("chart_recommendation"),
+            "summary": fr.get("summary"),
+            "rows": fr.get("rows", [])[:5],
+            "_truncated": len(fr.get("rows", [])) > 5,
+        }
+
+    return pruned
 
 
 _tracer: Optional[QueryTracer] = None
