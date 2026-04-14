@@ -5,6 +5,7 @@ from typing import Literal
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 
+from .logging_middleware import wrap_node
 from .nodes import (
     clarification_node,
     executor_node,
@@ -36,15 +37,15 @@ def build_graph() -> StateGraph:
     """Build and compile the NL2SQL StateGraph with clarification support."""
     workflow = StateGraph(NL2SQLState)
 
-    # Add all nodes
-    workflow.add_node("intent", intent_node)
-    workflow.add_node("clarification", clarification_node)
-    workflow.add_node("schema", schema_node)
-    workflow.add_node("generate_sql", sql_generator_node)
-    workflow.add_node("review", review_node)
-    workflow.add_node("execute", executor_node)
-    workflow.add_node("summarizer", summarizer_node)
-    workflow.add_node("formatter", formatter_node)
+    # Add all nodes wrapped with logging middleware
+    workflow.add_node("intent", wrap_node(intent_node, "intent"))
+    workflow.add_node("clarification", wrap_node(clarification_node, "clarification"))
+    workflow.add_node("schema", wrap_node(schema_node, "schema"))
+    workflow.add_node("generate_sql", wrap_node(sql_generator_node, "generate_sql"))
+    workflow.add_node("review", wrap_node(review_node, "review"))
+    workflow.add_node("execute", wrap_node(executor_node, "execute"))
+    workflow.add_node("summarizer", wrap_node(summarizer_node, "summarizer"))
+    workflow.add_node("formatter", wrap_node(formatter_node, "formatter"))
 
     # Define edges with clarification loop
     workflow.add_edge(START, "intent")
