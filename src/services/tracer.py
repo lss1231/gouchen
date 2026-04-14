@@ -127,44 +127,50 @@ def _safe_snapshot(state: Dict[str, Any]) -> Dict[str, Any]:
 
 def _prune_snapshot(state: Dict[str, Any]) -> Dict[str, Any]:
     """Prune large fields to keep trace files small and readable."""
-    pruned = dict(state)
+    pruned: Dict[str, Any] = {}
 
-    # Relevant tables: keep only table names and descriptions
-    if "relevant_tables" in pruned and isinstance(pruned["relevant_tables"], list):
+    # Keep only essential top-level keys
+    for key in ("query", "thread_id", "intent", "generated_sql", "sql_explanation",
+                "approval_decision", "summary", "error"):
+        if key in state:
+            pruned[key] = state[key]
+
+    # Relevant tables: keep only names
+    if "relevant_tables" in state and isinstance(state["relevant_tables"], list):
         pruned["relevant_tables"] = [
-            {
-                "table_name": t.get("table_name"),
-                "table_cn_name": t.get("table_cn_name"),
-                "description": t.get("description"),
-            }
-            for t in pruned["relevant_tables"]
+            {"table_name": t.get("table_name"), "table_cn_name": t.get("table_cn_name")}
+            for t in state["relevant_tables"]
             if isinstance(t, dict)
-        ]
+        ][:3]
 
     # Execution result: summarize, truncate rows
-    if "execution_result" in pruned and isinstance(pruned["execution_result"], dict):
-        er = pruned["execution_result"]
+    if "execution_result" in state and isinstance(state["execution_result"], dict):
+        er = state["execution_result"]
         pruned["execution_result"] = {
             "sql": er.get("sql"),
             "execution_time_ms": er.get("execution_time_ms"),
             "row_count": er.get("row_count"),
             "columns": er.get("columns"),
-            "rows": er.get("rows", [])[:5],
-            "_truncated": len(er.get("rows", [])) > 5,
+            "rows": er.get("rows", [])[:3],
+            "_truncated": len(er.get("rows", [])) > 3,
         }
 
     # Formatted result: summarize, truncate rows
-    if "formatted_result" in pruned and isinstance(pruned["formatted_result"], dict):
-        fr = pruned["formatted_result"]
+    if "formatted_result" in state and isinstance(state["formatted_result"], dict):
+        fr = state["formatted_result"]
         pruned["formatted_result"] = {
-            "sql": fr.get("sql"),
-            "execution_time_ms": fr.get("execution_time_ms"),
             "row_count": fr.get("row_count"),
             "chart_recommendation": fr.get("chart_recommendation"),
             "summary": fr.get("summary"),
-            "rows": fr.get("rows", [])[:5],
-            "_truncated": len(fr.get("rows", [])) > 5,
+            "rows": fr.get("rows", [])[:3],
+            "_truncated": len(fr.get("rows", [])) > 3,
         }
+
+    # Clarification history: keep last 2 rounds
+    if "clarification_history" in state and isinstance(state["clarification_history"], list):
+        hist = state["clarification_history"]
+        pruned["clarification_history"] = hist[-2:]
+        pruned["_clarification_history_truncated"] = len(hist) > 2
 
     return pruned
 
