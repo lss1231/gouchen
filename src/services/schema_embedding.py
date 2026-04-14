@@ -57,17 +57,10 @@ class SchemaEmbeddingService:
 
     def _table_to_text(self, table: TableMetadata) -> str:
         """Convert table metadata to searchable text."""
-        # Handle both dict and TableMetadata objects
-        if hasattr(table, 'fields'):
-            fields = table.fields
-            table_name = table.table_name
-            table_cn_name = table.table_cn_name
-            description = table.description
-        else:
-            fields = table.get('fields', [])
-            table_name = table.get('table_name', '')
-            table_cn_name = table.get('table_cn_name', '')
-            description = table.get('description', '')
+        fields = table.fields
+        table_name = table.table_name
+        table_cn_name = table.table_cn_name
+        description = table.description
 
         parts = [
             f"表名: {table_name}",
@@ -76,21 +69,14 @@ class SchemaEmbeddingService:
         ]
 
         # Add keywords if available (important for vector search matching)
-        if hasattr(table, 'keywords') and table.keywords:
+        if table.keywords:
             parts.append(f"关键词: {', '.join(table.keywords)}")
-        elif isinstance(table, dict) and table.get('keywords'):
-            parts.append(f"关键词: {', '.join(table['keywords'])}")
 
         parts.append("字段:")
         for field in fields:
-            if isinstance(field, dict):
-                field_name = field.get('field_name', '')
-                field_cn_name = field.get('field_cn_name', '')
-                field_desc = field.get('description', '')
-            else:
-                field_name = getattr(field, 'field_name', '')
-                field_cn_name = getattr(field, 'field_cn_name', '')
-                field_desc = getattr(field, 'description', '')
+            field_name = field.field_name
+            field_cn_name = field.field_cn_name
+            field_desc = field.description
             field_desc_str = f"  - {field_name} ({field_cn_name}): {field_desc}"
             parts.append(field_desc_str)
 

@@ -1,12 +1,12 @@
 """SQL generator node for NL2SQL graph - Doris only."""
 
-import re
 from typing import Any, Dict, List
 
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
 from ...config import get_settings
+from ...utils.sql_safety import validate_sql_safety
 
 
 class SQLGenerationResult(BaseModel):
@@ -69,14 +69,6 @@ SQL_GENERATOR_PROMPT = """你是一个专业的SQL生成助手。请根据以下
 5. 时间范围必须在WHERE子句中明确指定
 6. 如果涉及多个表，使用JOIN并确保有适当的连接条件"""
 
-# Forbidden keywords for safety check
-FORBIDDEN_KEYWORDS = [
-    "insert", "update", "delete", "drop", "alter", "truncate",
-    "create", "grant", "revoke", "exec", "execute", "sp_",
-    "xp_", "--", ";/*", "*/", "@@", "@variable"
-]
-
-
 def format_schema_for_prompt(tables: List[Dict[str, Any]]) -> str:
     """Format table schema for LLM prompt."""
     schema_parts = []
@@ -112,33 +104,6 @@ def format_schema_for_prompt(tables: List[Dict[str, Any]]) -> str:
         schema_parts.append(schema_part)
 
     return "\n".join(schema_parts)
-
-
-def validate_sql_safety(sql: str) -> tuple[bool, str]:
-    """Validate SQL for safety issues."""
-    sql_lower = sql.lower().strip()
-
-    # Must start with SELECT or WITH (CTE)
-    if not (sql_lower.startswith("select") or sql_lower.startswith("with")):
-        return False, "SQL must start with SELECT or WITH"
-
-    # Check for forbidden keywords using word boundaries to avoid false positives
-    # (e.g., "create_time" should not trigger a match for "create")
-    for keyword in FORBIDDEN_KEYWORDS:
-        # Simple in-string check for patterns that are not words
-        if not re.search(r"\b" + re.escape(keyword) + r"\b", sql_lower):
-            continue
-        # Extra check: ensure it is not part of a common benign field name
-        # like create_time / update_time (handled by \b for underscore)
-        return False, f"SQL contains forbidden keyword: {keyword}"
-
-    # Check for multiple statements
-    if ";" in sql and not sql_lower.endswith(";"):
-        statements = [s.strip() for s in sql.split(";") if s.strip()]
-        if len(statements) > 1:
-            return False, "Multiple SQL statements are not allowed"
-
-    return True, ""
 
 
 def sql_generator_node(state: Dict[str, Any]) -> Dict[str, Any]:

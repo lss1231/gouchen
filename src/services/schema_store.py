@@ -53,9 +53,12 @@ class SchemaStore:
             table.description.lower(),
         ]
         for field in table.fields:
-            texts.append(field['field_name'].lower())
-            texts.append(field['field_cn_name'].lower())
-            texts.append(field['description'].lower())
+            field_name = field.get('field_name', '') if isinstance(field, dict) else getattr(field, 'field_name', '')
+            field_cn_name = field.get('field_cn_name', '') if isinstance(field, dict) else getattr(field, 'field_cn_name', '')
+            description = field.get('description', '') if isinstance(field, dict) else getattr(field, 'description', '')
+            texts.append(field_name.lower())
+            texts.append(field_cn_name.lower())
+            texts.append(description.lower())
 
         searchable_text = ' '.join(texts)
 
@@ -139,7 +142,7 @@ class SchemaStore:
         query_lower = query.lower()
 
         for term, related_terms in term_mapping.items():
-            if term in query:
+            if term in query_lower:
                 keywords.append(term)
                 keywords.extend(related_terms)
 

@@ -3,56 +3,20 @@
 import time
 from typing import Any, Dict, List
 
-import sqlparse
 from sqlalchemy import create_engine, text
 
 from ...config import get_settings
+from ...utils.sql_safety import validate_sql_safety
+
+_engine = None
 
 
-# Forbidden keywords for additional safety validation
-FORBIDDEN_KEYWORDS = [
-    "insert", "update", "delete", "drop", "alter", "truncate",
-    "create", "grant", "revoke", "exec", "execute", "sp_",
-    "xp_", "--", ";/*", "*/", "@@", "@variable"
-]
-
-
-def validate_sql_safety(sql: str) -> tuple[bool, str]:
-    """Validate SQL for safety issues."""
-    if not sql or not isinstance(sql, str):
-        return False, "SQL query is empty or invalid"
-
-    sql_lower = sql.lower().strip()
-
-    # Must start with SELECT or WITH (CTE)
-    if not (sql_lower.startswith("select") or sql_lower.startswith("with")):
-        return False, "SQL must start with SELECT or WITH"
-
-    # Parse SQL to check for forbidden statements
-    try:
-        parsed = sqlparse.parse(sql)
-        for statement in parsed:
-            first_token = None
-            for token in statement.tokens:
-                if not token.is_whitespace:
-                    first_token = token
-                    break
-
-            if first_token:
-                token_value = str(first_token).lower()
-                if token_value in ["insert", "update", "delete", "drop", "alter", "truncate", "create", "grant", "revoke"]:
-                    return False, f"Forbidden SQL statement type: {token_value}"
-
-    except Exception as e:
-        return False, f"SQL parsing error: {str(e)}"
-
-    # Additional keyword check (use word boundaries to avoid false positives)
-    import re
-    for keyword in FORBIDDEN_KEYWORDS:
-        if re.search(r"\b" + re.escape(keyword) + r"\b", sql_lower):
-            return False, f"SQL contains forbidden keyword: {keyword}"
-
-    return True, ""
+def _get_engine():
+    global _engine
+    if _engine is None:
+        settings = get_settings()
+        _engine = create_engine(settings.database_url, pool_pre_ping=True)
+    return _engine
 
 
 def executor_node(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -85,7 +49,7 @@ def executor_node(state: Dict[str, Any]) -> Dict[str, Any]:
         settings = get_settings()
 
         # Create Doris database connection
-        engine = create_engine(settings.database_url, pool_pre_ping=True)
+        engine = _get_engine()
 
         # Execute query with timing
         start_time = time.time()
