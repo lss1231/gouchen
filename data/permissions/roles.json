@@ -1,16 +1,12 @@
 {
   "roles": {
-    "admin": {
+    "analyst": {
       "allowed_tables": ["*"],
       "denied_fields": []
     },
-    "sales": {
-      "allowed_tables": ["fact_order", "dim_region", "dim_product"],
-      "denied_fields": ["cost_price", "profit_margin"]
-    },
-    "analyst": {
+    "viewer": {
       "allowed_tables": ["*"],
-      "denied_fields": ["user_phone", "user_email", "id_card"]
+      "denied_fields": []
     }
   }
 }

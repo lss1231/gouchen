@@ -1,0 +1,19 @@
+{
+  "category": "join",
+  "tags": ["user", "gmv", "join", "total_spent"],
+  "query": "每个用户的总消费金额",
+  "intent": {
+    "metrics": ["消费金额"],
+    "resolved_metrics": ["actual_amount"],
+    "dimensions": ["user_id"],
+    "filters": [],
+    "time_range": {"type": "all_time"},
+    "aggregation": "sum",
+    "limit": 1000,
+    "analysis_type": "single",
+    "compare_periods": []
+  },
+  "schema_tables": ["dwd_order_detail"],
+  "sql": "SELECT user_id, SUM(pay_amount) AS total_spent FROM dwd_order_detail GROUP BY user_id ORDER BY total_spent DESC LIMIT 1000",
+  "explanation": "从订单明细宽表按用户ID汇总实付金额，计算每个用户的总消费"
+}

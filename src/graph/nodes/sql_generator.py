@@ -6,6 +6,9 @@ from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
 from ...config import get_settings
+from ...services.metric_knowledge import get_metric_knowledge_service
+from ...services.few_shot_store import get_few_shot_store
+from ...services.success_case_store import get_success_case_store
 from ...utils.sql_safety import validate_sql_safety
 
 
@@ -32,7 +35,8 @@ SQL_GENERATOR_PROMPT = """你是一个专业的SQL生成助手。请根据以下
 3. 如果表中没有该字段，使用聚合函数计算（如 SUM/COUNT）
 
 ## 用户查询意图
-- 指标: {metrics}
+- 原始指标: {metrics}
+- 解析后的标准指标: {resolved_metrics}
 - 维度: {dimensions}
 - 过滤条件: {filters}
 - 时间范围: {time_range}
@@ -40,6 +44,20 @@ SQL_GENERATOR_PROMPT = """你是一个专业的SQL生成助手。请根据以下
 - 限制条数: {limit}
 - 分析类型: {analysis_type}
 - 对比时间段: {compare_periods}
+
+## 指标定义参考
+{metric_definitions}
+
+指标定义说明：
+- 如果指标定义中提供了 formula，请优先使用该公式
+- 如果指标定义中指定了 applicable_tables，请优先从这些表中选择数据
+- 如果指标已预计算在 ADS/DWS 层表中，优先使用预计算字段，避免在 DWD/ODS 层重新计算
+
+## 参考案例（请学习以下案例的 SQL 写法）
+{few_shot_examples}
+
+## 历史成功案例（参考相似查询的成功 SQL）
+{success_cases}
 
 ## 可用表结构（**严格使用以下字段，禁止编造**）
 {schema}
@@ -124,6 +142,7 @@ def sql_generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
     # Extract intent fields
     metrics = intent.get("metrics", [])
+    resolved_metrics = intent.get("resolved_metrics", [])
     dimensions = intent.get("dimensions", [])
     filters = intent.get("filters", [])
     time_range = intent.get("time_range", {})
@@ -131,6 +150,23 @@ def sql_generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     limit = intent.get("limit", 1000)
     analysis_type = intent.get("analysis_type", "single")
     compare_periods = intent.get("compare_periods", [])
+
+    # Load metric definitions for resolved metrics
+    metric_service = get_metric_knowledge_service()
+    metric_definitions_str = metric_service.format_metrics_for_prompt(resolved_metrics)
+
+    # Load few-shot examples
+    few_shot_store = get_few_shot_store()
+    few_shot_examples = few_shot_store.search(query=state.get("query", ""), top_k=2, category=analysis_type)
+    # If no examples matched by category, fallback to general search
+    if not few_shot_examples:
+        few_shot_examples = few_shot_store.search(query=state.get("query", ""), top_k=2)
+    few_shot_str = few_shot_store.format_for_prompt(few_shot_examples)
+
+    # Load dynamic success cases
+    success_case_store = get_success_case_store()
+    success_cases = success_case_store.search(query=state.get("query", ""), top_k=2)
+    success_cases_str = success_case_store.format_for_prompt(success_cases)
 
     try:
         # Generate SQL using LLM with structured output
@@ -146,6 +182,10 @@ def sql_generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
         prompt = SQL_GENERATOR_PROMPT.format(
             metrics=metrics,
+            resolved_metrics=resolved_metrics,
+            metric_definitions=metric_definitions_str,
+            few_shot_examples=few_shot_str,
+            success_cases=success_cases_str,
             dimensions=dimensions,
             filters=filters,
             time_range=time_range,

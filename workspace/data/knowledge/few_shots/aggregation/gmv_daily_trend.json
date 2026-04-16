@@ -1,0 +1,19 @@
+{
+  "category": "aggregation",
+  "tags": ["gmv", "daily", "trend", "single"],
+  "query": "近7天每日销售额趋势",
+  "intent": {
+    "metrics": ["销售额"],
+    "resolved_metrics": ["gmv"],
+    "dimensions": ["date"],
+    "filters": [],
+    "time_range": {"type": "last_7_days", "days": 7},
+    "aggregation": "sum",
+    "limit": 1000,
+    "analysis_type": "single",
+    "compare_periods": []
+  },
+  "schema_tables": ["dws_sales_daily"],
+  "sql": "SELECT stat_date, SUM(gmv) AS gmv FROM dws_sales_daily WHERE stat_date >= DATE_SUB(CURRENT_DATE, 7) GROUP BY stat_date ORDER BY stat_date",
+  "explanation": "从日销售汇总表汇总近7天每日GMV，按日期分组排序"
+}

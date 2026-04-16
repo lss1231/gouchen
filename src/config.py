@@ -28,12 +28,17 @@ class Settings(BaseSettings):
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
     qdrant_collection: str = "schema_embeddings"
+    qdrant_fewshot_collection: str = "few_shot_examples"
+    qdrant_success_case_collection: str = "success_cases"
     qdrant_vector_size: int = 512
 
     # Vector store settings
-    vector_store_path: str = "data/vector_store"
+    vector_store_path: str = "workspace/data/vector_store"
     embedding_model: str = "BAAI/bge-small-zh"
     use_vector_search: bool = True
+
+    # Knowledge settings
+    knowledge_dir: str = "workspace/data/knowledge"
 
     @property
     def database_url(self) -> str:

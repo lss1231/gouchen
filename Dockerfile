@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -e "."
 
 # Copy source
 COPY src/ ./src/
-COPY data/ ./data/
+COPY workspace/ ./workspace/
 
 EXPOSE 8000
 

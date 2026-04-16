@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from ...graph.builder import get_graph
 from ...services.tracer import get_tracer
+from ...services.success_case_store import get_success_case_store
 
 router = APIRouter()
 
@@ -69,6 +70,44 @@ class TraceListResponse(BaseModel):
     traces: List[TraceSummary]
 
 
+def _try_add_success_case(result: Dict[str, Any]) -> None:
+    """Add a successful query to the success case store if criteria are met."""
+    execution_result = result.get("execution_result")
+    if not execution_result:
+        return
+
+    row_count = execution_result.get("row_count", 0)
+    if row_count <= 0:
+        return
+
+    relevant_tables = result.get("relevant_tables", [])
+    schema_table_names = []
+    for t in relevant_tables:
+        if isinstance(t, dict):
+            schema_table_names.append(t.get("table_name", ""))
+        elif hasattr(t, "table_name"):
+            schema_table_names.append(t.table_name)
+
+    intent = result.get("intent") or {}
+    if isinstance(intent, dict):
+        intent_dict = intent
+    else:
+        intent_dict = intent.dict() if hasattr(intent, "dict") else {}
+
+    try:
+        store = get_success_case_store()
+        store.add_success_case(
+            query=result.get("query", ""),
+            intent=intent_dict,
+            schema_tables=schema_table_names,
+            sql=result.get("generated_sql", ""),
+            explanation=result.get("sql_explanation", ""),
+            row_count=row_count,
+        )
+    except Exception as e:
+        print(f"Failed to add success case: {e}")
+
+
 @router.post("/query", response_model=QueryResponse)
 async def create_query(request: QueryRequest) -> QueryResponse:
     """
@@ -100,6 +139,7 @@ async def create_query(request: QueryRequest) -> QueryResponse:
             "query": request.query,
             "thread_id": request.thread_id,
             "user_role": request.user_role,
+            "datasource": request.datasource or "doris",
             "intent": None,
             "relevant_tables": [],
             "generated_sql": None,
@@ -172,7 +212,17 @@ async def create_query(request: QueryRequest) -> QueryResponse:
             )
 
         formatted_result = result.get("formatted_result")
+        _try_add_success_case(result)
         tracer.finish_trace(request.thread_id, "completed", result)
+
+        relevant_tables = result.get("relevant_tables", [])
+        table_names = []
+        for t in relevant_tables:
+            if isinstance(t, dict):
+                table_names.append(t.get("table_name", ""))
+            elif hasattr(t, "table_name"):
+                table_names.append(t.table_name)
+
         return QueryResponse(
             status="completed",
             thread_id=request.thread_id,
@@ -185,6 +235,8 @@ async def create_query(request: QueryRequest) -> QueryResponse:
                 "summary": formatted_result.get("summary") if formatted_result else None,
                 "approval_decision": result.get("approval_decision"),
                 "clarification_history": result.get("clarification_history"),
+                "datasource": result.get("datasource") or "doris",
+                "tables": table_names,
             },
         )
 
@@ -269,7 +321,17 @@ async def clarify_query(request: ClarifyRequest) -> QueryResponse:
             )
 
         formatted_result = result.get("formatted_result")
+        _try_add_success_case(result)
         tracer.finish_trace(request.thread_id, "completed", result)
+
+        relevant_tables = result.get("relevant_tables", [])
+        table_names = []
+        for t in relevant_tables:
+            if isinstance(t, dict):
+                table_names.append(t.get("table_name", ""))
+            elif hasattr(t, "table_name"):
+                table_names.append(t.table_name)
+
         return QueryResponse(
             status="completed",
             thread_id=request.thread_id,
@@ -281,6 +343,8 @@ async def clarify_query(request: ClarifyRequest) -> QueryResponse:
                 "formatted_result": formatted_result,
                 "summary": formatted_result.get("summary") if formatted_result else None,
                 "clarification_history": result.get("clarification_history", []),
+                "datasource": result.get("datasource") or "doris",
+                "tables": table_names,
             },
         )
 
@@ -342,7 +406,17 @@ async def approve_query(request: ApproveRequest) -> QueryResponse:
             )
 
         formatted_result = result.get("formatted_result")
+        _try_add_success_case(result)
         tracer.finish_trace(request.thread_id, "completed", result)
+
+        relevant_tables = result.get("relevant_tables", [])
+        table_names = []
+        for t in relevant_tables:
+            if isinstance(t, dict):
+                table_names.append(t.get("table_name", ""))
+            elif hasattr(t, "table_name"):
+                table_names.append(t.table_name)
+
         return QueryResponse(
             status="completed",
             thread_id=request.thread_id,
@@ -355,6 +429,8 @@ async def approve_query(request: ApproveRequest) -> QueryResponse:
                 "summary": formatted_result.get("summary") if formatted_result else None,
                 "approval_decision": result.get("approval_decision"),
                 "clarification_history": result.get("clarification_history", []),
+                "datasource": result.get("datasource") or "doris",
+                "tables": table_names,
             },
         )
 

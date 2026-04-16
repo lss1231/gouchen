@@ -1,0 +1,3224 @@
+{
+  "tables": [
+    {
+      "table_name": "dim_date",
+      "table_cn_name": "日期维度表",
+      "description": "数据仓库日期维度表，提供标准日期属性支持时间序列分析。包含公历日期、农历标记、节假日标识、财年会话等。用于关联事实表进行按日/周/月/季/年统计分析，支持同比环比计算。",
+      "datasource": "doris",
+      "layer": "DIM",
+      "keywords": [
+        "日期",
+        "时间",
+        "日历",
+        "节假日",
+        "星期",
+        "季度",
+        "年月",
+        "date",
+        "time",
+        "calendar"
+      ],
+      "fields": [
+        {
+          "field_name": "date_key",
+          "field_cn_name": "日期键",
+          "data_type": "INT",
+          "description": "日期主键，YYYYMMDD格式，如20240101表示2024年1月1日"
+        },
+        {
+          "field_name": "date_str",
+          "field_cn_name": "日期字符串",
+          "data_type": "VARCHAR(10)",
+          "description": "标准日期格式YYYY-MM-DD字符串"
+        },
+        {
+          "field_name": "day_of_week",
+          "field_cn_name": "星期几",
+          "data_type": "TINYINT",
+          "description": "星期几，1=周一，7=周日"
+        },
+        {
+          "field_name": "day_name",
+          "field_cn_name": "星期名称",
+          "data_type": "VARCHAR(10)",
+          "description": "星期几名称，如'星期一'"
+        },
+        {
+          "field_name": "month_name",
+          "field_cn_name": "月份名称",
+          "data_type": "VARCHAR(10)",
+          "description": "月份名称，如'一月'"
+        },
+        {
+          "field_name": "holiday_name",
+          "field_cn_name": "节假日名称",
+          "data_type": "VARCHAR(50)",
+          "description": "节假日名称，如'春节'、'国庆'，非节假日为空"
+        },
+        {
+          "field_name": "year",
+          "field_cn_name": "年份",
+          "data_type": "SMALLINT",
+          "description": "四位年份数字，如2024"
+        },
+        {
+          "field_name": "month",
+          "field_cn_name": "月份",
+          "data_type": "TINYINT",
+          "description": "月份数字1-12，1表示一月"
+        },
+        {
+          "field_name": "day",
+          "field_cn_name": "日期",
+          "data_type": "TINYINT",
+          "description": "日期数字1-31"
+        },
+        {
+          "field_name": "quarter",
+          "field_cn_name": "季度",
+          "data_type": "TINYINT",
+          "description": "财年季度1-4，Q1(1-3月)、Q2(4-6月)、Q3(7-9月)、Q4(10-12月)"
+        },
+        {
+          "field_name": "week_of_year",
+          "field_cn_name": "年内周数",
+          "data_type": "TINYINT",
+          "description": "该日期是年内第几周，1-53"
+        },
+        {
+          "field_name": "is_weekend",
+          "field_cn_name": "是否周末",
+          "data_type": "BOOLEAN",
+          "description": "是否周末：true表示周六或周日，false表示工作日"
+        },
+        {
+          "field_name": "is_holiday",
+          "field_cn_name": "是否节假日",
+          "data_type": "BOOLEAN",
+          "description": "是否法定节假日：true表示国定假日（春节、国庆等），false表示普通日期"
+        }
+      ]
+    },
+    {
+      "table_name": "dim_region",
+      "table_cn_name": "地区维度表",
+      "description": "中国行政区划维度表，存储省市区三级地理信息，包括地域标签（华东/华南等）、城市等级（一线/二线/三线）。用于订单地域分析、用户地域分布、区域销售统计、物流规划。",
+      "datasource": "doris",
+      "layer": "DIM",
+      "keywords": [
+        "地区",
+        "省份",
+        "城市",
+        "地域",
+        "行政区划",
+        "地理",
+        "region",
+        "province",
+        "city",
+        "location"
+      ],
+      "fields": [
+        {
+          "field_name": "region_id",
+          "field_cn_name": "地区ID",
+          "data_type": "INT",
+          "description": "地区唯一标识"
+        },
+        {
+          "field_name": "region_name",
+          "field_cn_name": "地区名称",
+          "data_type": "VARCHAR(50)",
+          "description": "地区名称"
+        },
+        {
+          "field_name": "region_level",
+          "field_cn_name": "地区级别",
+          "data_type": "TINYINT",
+          "description": "地区级别：1省，2市，3区"
+        },
+        {
+          "field_name": "parent_id",
+          "field_cn_name": "父级ID",
+          "data_type": "INT",
+          "description": "上级地区ID，省级的parent_id为0"
+        },
+        {
+          "field_name": "region_path",
+          "field_cn_name": "地区路径",
+          "data_type": "VARCHAR(200)",
+          "description": "地区完整路径，如'1/110000/110101'"
+        },
+        {
+          "field_name": "region_code",
+          "field_cn_name": "地区编码",
+          "data_type": "VARCHAR(20)",
+          "description": "国标行政区划代码，如'110000'表示北京市"
+        }
+      ]
+    },
+    {
+      "table_name": "dim_product",
+      "table_cn_name": "商品维度表",
+      "description": "商品信息维度表，从ODS层清洗加工而来，包含完整商品属性、类目路径、品牌信息、价格成本等。用于关联订单明细进行商品分析、类目分析、品牌分析、利润计算。",
+      "datasource": "doris",
+      "layer": "DIM",
+      "keywords": [
+        "商品维度",
+        "SKU",
+        "SPU",
+        "类目",
+        "品牌",
+        "product",
+        "SKU",
+        "category"
+      ],
+      "fields": [
+        {
+          "field_name": "product_id",
+          "field_cn_name": "商品ID",
+          "data_type": "BIGINT",
+          "description": "商品唯一标识"
+        },
+        {
+          "field_name": "product_name",
+          "field_cn_name": "商品名称",
+          "data_type": "VARCHAR(200)",
+          "description": "商品完整名称"
+        },
+        {
+          "field_name": "category_id",
+          "field_cn_name": "类目ID",
+          "data_type": "INT",
+          "description": "所属三级类目ID"
+        },
+        {
+          "field_name": "category_name",
+          "field_cn_name": "类目名称",
+          "data_type": "VARCHAR(100)",
+          "description": "类目完整路径，如'家电/电视/4K电视'"
+        },
+        {
+          "field_name": "brand_id",
+          "field_cn_name": "品牌ID",
+          "data_type": "INT",
+          "description": "品牌唯一标识"
+        },
+        {
+          "field_name": "brand_name",
+          "field_cn_name": "品牌名称",
+          "data_type": "VARCHAR(50)",
+          "description": "品牌中文名，如'苹果'、'华为'"
+        },
+        {
+          "field_name": "price",
+          "field_cn_name": "销售价",
+          "data_type": "DECIMAL(12,2)",
+          "description": "商品当前售价"
+        },
+        {
+          "field_name": "cost",
+          "field_cn_name": "成本价",
+          "data_type": "DECIMAL(12,2)",
+          "description": "商品成本，用于计算毛利"
+        },
+        {
+          "field_name": "profit_rate",
+          "field_cn_name": "毛利率",
+          "data_type": "DECIMAL(5,4)",
+          "description": "毛利率 = (售价-成本)/售价，如0.25表示25%毛利"
+        },
+        {
+          "field_name": "status",
+          "field_cn_name": "商品状态",
+          "data_type": "TINYINT",
+          "description": "0下架，1上架"
+        },
+        {
+          "field_name": "create_date",
+          "field_cn_name": "创建日期",
+          "data_type": "DATE",
+          "description": "商品首次上架日期"
+        },
+        {
+          "field_name": "update_date",
+          "field_cn_name": "更新日期",
+          "data_type": "DATE",
+          "description": "商品信息最后更新日期"
+        }
+      ]
+    },
+    {
+      "table_name": "dwd_order_detail",
+      "table_cn_name": "订单明细宽表",
+      "description": "订单事实明细宽表，融合订单、商品、用户、地区等维度信息。每条记录代表一个订单中的一个商品行（如订单买了3件商品则有3条记录）。包含完整订单属性、商品快照、用户属性、地区信息、利润计算字段。是销售分析、利润分析、用户行为分析的核心事实表。",
+      "datasource": "doris",
+      "layer": "DWD",
+      "keywords": [
+        "订单明细",
+        "交易明细",
+        "订单宽表",
+        "销售明细",
+        "order detail",
+        "fact table"
+      ],
+      "fields": [
+        {
+          "field_name": "order_id",
+          "field_cn_name": "订单ID",
+          "data_type": "BIGINT",
+          "description": "订单唯一标识"
+        },
+        {
+          "field_name": "order_item_id",
+          "field_cn_name": "明细ID",
+          "data_type": "BIGINT",
+          "description": "订单明细行唯一标识"
+        },
+        {
+          "field_name": "user_id",
+          "field_cn_name": "买家用户ID",
+          "data_type": "BIGINT",
+          "description": "下单用户ID"
+        },
+        {
+          "field_name": "product_id",
+          "field_cn_name": "商品ID",
+          "data_type": "BIGINT",
+          "description": "购买的商品ID"
+        },
+        {
+          "field_name": "category_id",
+          "field_cn_name": "类目ID",
+          "data_type": "INT",
+          "description": "商品所属类目ID"
+        },
+        {
+          "field_name": "brand_id",
+          "field_cn_name": "品牌ID",
+          "data_type": "INT",
+          "description": "商品品牌ID"
+        },
+        {
+          "field_name": "quantity",
+          "field_cn_name": "购买数量",
+          "data_type": "INT",
+          "description": "该商品购买件数"
+        },
+        {
+          "field_name": "unit_price",
+          "field_cn_name": "商品单价",
+          "data_type": "DECIMAL(12,2)",
+          "description": "下单时商品单价"
+        },
+        {
+          "field_name": "discount_amount",
+          "field_cn_name": "优惠金额",
+          "data_type": "DECIMAL(12,2)",
+          "description": "该商品行优惠金额"
+        },
+        {
+          "field_name": "pay_amount",
+          "field_cn_name": "实付金额",
+          "data_type": "DECIMAL(12,2)",
+          "description": "该商品行实际支付金额（分摊优惠后）"
+        },
+        {
+          "field_name": "unit_cost",
+          "field_cn_name": "单位成本",
+          "data_type": "DECIMAL(12,2)",
+          "description": "商品单位成本价"
+        },
+        {
+          "field_name": "profit",
+          "field_cn_name": "毛利",
+          "data_type": "DECIMAL(12,2)",
+          "description": "该商品行毛利 = (单价-成本) × 数量"
+        },
+        {
+          "field_name": "order_status",
+          "field_cn_name": "订单状态",
+          "data_type": "TINYINT",
+          "description": "1待支付，2已支付，3已发货，4已完成，5已取消"
+        },
+        {
+          "field_name": "pay_type",
+          "field_cn_name": "支付方式",
+          "data_type": "TINYINT",
+          "description": "1支付宝，2微信，3银行卡，4余额"
+        },
+        {
+          "field_name": "province_id",
+          "field_cn_name": "省份ID",
+          "data_type": "INT",
+          "description": "收货省份ID"
+        },
+        {
+          "field_name": "city_id",
+          "field_cn_name": "城市ID",
+          "data_type": "INT",
+          "description": "收货城市ID"
+        },
+        {
+          "field_name": "order_date",
+          "field_cn_name": "订单日期",
+          "data_type": "DATE",
+          "description": "订单创建日期，格式YYYY-MM-DD"
+        },
+        {
+          "field_name": "order_month",
+          "field_cn_name": "订单月份",
+          "data_type": "INT",
+          "description": "订单月份，格式YYYYMM，如202401"
+        },
+        {
+          "field_name": "pay_time",
+          "field_cn_name": "支付时间",
+          "data_type": "DATETIME",
+          "description": "用户支付时间"
+        },
+        {
+          "field_name": "create_time",
+          "field_cn_name": "创建时间",
+          "data_type": "DATETIME",
+          "description": "订单创建时间"
+        }
+      ]
+    },
+    {
+      "table_name": "dws_sales_daily",
+      "table_cn_name": "日销售汇总表",
+      "description": "日级销售汇总表，按日期、省份、类目三个维度汇总销售指标。包含订单数、用户数、GMV、实付金额、优惠金额、退货指标等核心销售KPI。用于日报生成、趋势分析、同比环比计算、地域/类目销售分析。",
+      "datasource": "doris",
+      "layer": "DWS",
+      "keywords": [
+        "日销售",
+        "日报",
+        "每日统计",
+        "日汇总",
+        "daily sales",
+        "日GMV",
+        "日订单"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "field_cn_name": "统计日期",
+          "data_type": "DATE",
+          "description": "汇总统计日期"
+        },
+        {
+          "field_name": "province_id",
+          "field_cn_name": "省份ID",
+          "data_type": "INT",
+          "description": "收货省份ID"
+        },
+        {
+          "field_name": "category_id",
+          "field_cn_name": "类目ID",
+          "data_type": "INT",
+          "description": "商品类目ID"
+        },
+        {
+          "field_name": "order_count",
+          "field_cn_name": "订单数",
+          "data_type": "BIGINT",
+          "description": "当日订单数量（去重）"
+        },
+        {
+          "field_name": "order_user_count",
+          "field_cn_name": "下单用户数",
+          "data_type": "BIGINT",
+          "description": "当日下单的去重用户数"
+        },
+        {
+          "field_name": "product_count",
+          "field_cn_name": "商品种数",
+          "data_type": "BIGINT",
+          "description": "当日销售的商品SKU种类数"
+        },
+        {
+          "field_name": "gmv",
+          "field_cn_name": "GMV",
+          "data_type": "DECIMAL(18,2)",
+          "description": "商品交易总额（订单金额合计，未扣除优惠）"
+        },
+        {
+          "field_name": "discount_amount",
+          "field_cn_name": "优惠金额",
+          "data_type": "DECIMAL(18,2)",
+          "description": "当日优惠总金额"
+        },
+        {
+          "field_name": "actual_amount",
+          "field_cn_name": "实付金额",
+          "data_type": "DECIMAL(18,2)",
+          "description": "用户实际支付金额合计"
+        },
+        {
+          "field_name": "cost_amount",
+          "field_cn_name": "成本金额",
+          "data_type": "DECIMAL(18,2)",
+          "description": "销售商品成本合计"
+        },
+        {
+          "field_name": "profit_amount",
+          "field_cn_name": "毛利金额",
+          "data_type": "DECIMAL(18,2)",
+          "description": "当日毛利 = 实付金额 - 成本金额"
+        }
+      ]
+    },
+    {
+      "table_name": "dws_sales_monthly",
+      "table_cn_name": "月销售汇总表",
+      "description": "月级销售汇总表，按月份、省份、类目汇总销售指标。包含月度GMV、订单数、用户数、成本、利润等。用于月报生成、月度经营分析、趋势对比、年度规划。",
+      "datasource": "doris",
+      "layer": "DWS",
+      "keywords": [
+        "月销售",
+        "月报",
+        "每月统计",
+        "月汇总",
+        "monthly sales",
+        "月度GMV",
+        "月度订单"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_month",
+          "field_cn_name": "统计月份",
+          "data_type": "INT",
+          "description": "统计月份，格式YYYYMM"
+        },
+        {
+          "field_name": "province_id",
+          "field_cn_name": "省份ID",
+          "data_type": "INT",
+          "description": "收货省份ID"
+        },
+        {
+          "field_name": "category_id",
+          "field_cn_name": "类目ID",
+          "data_type": "INT",
+          "description": "商品类目ID"
+        },
+        {
+          "field_name": "order_count",
+          "field_cn_name": "订单数",
+          "data_type": "BIGINT",
+          "description": "当月订单数量"
+        },
+        {
+          "field_name": "order_user_count",
+          "field_cn_name": "下单用户数",
+          "data_type": "BIGINT",
+          "description": "当月下单的去重用户数"
+        },
+        {
+          "field_name": "product_count",
+          "field_cn_name": "商品种数",
+          "data_type": "BIGINT",
+          "description": "当月销售的商品SKU种类数"
+        },
+        {
+          "field_name": "gmv",
+          "field_cn_name": "GMV",
+          "data_type": "DECIMAL(18,2)",
+          "description": "当月商品交易总额"
+        },
+        {
+          "field_name": "discount_amount",
+          "field_cn_name": "优惠金额",
+          "data_type": "DECIMAL(18,2)",
+          "description": "当月优惠总金额"
+        },
+        {
+          "field_name": "actual_amount",
+          "field_cn_name": "实付金额",
+          "data_type": "DECIMAL(18,2)",
+          "description": "当月用户实际支付金额"
+        },
+        {
+          "field_name": "cost_amount",
+          "field_cn_name": "成本金额",
+          "data_type": "DECIMAL(18,2)",
+          "description": "当月销售商品成本合计"
+        },
+        {
+          "field_name": "profit_amount",
+          "field_cn_name": "毛利金额",
+          "data_type": "DECIMAL(18,2)",
+          "description": "当月毛利 = 实付金额 - 成本金额"
+        }
+      ]
+    },
+    {
+      "table_name": "dws_user_stats",
+      "table_cn_name": "用户统计表",
+      "description": "日级用户指标汇总表，包含活跃用户、付费用户、订单数等核心用户运营指标。用于用户增长分析、活跃度监控、用户运营效果评估。",
+      "datasource": "doris",
+      "layer": "DWS",
+      "keywords": [
+        "用户统计",
+        "用户增长",
+        "活跃用户",
+        "新增用户",
+        "user stats",
+        "日活"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "field_cn_name": "统计日期",
+          "data_type": "DATE",
+          "description": "统计日期"
+        },
+        {
+          "field_name": "new_users",
+          "field_cn_name": "新增用户",
+          "data_type": "BIGINT",
+          "description": "当日新注册用户数"
+        },
+        {
+          "field_name": "active_users",
+          "field_cn_name": "活跃用户",
+          "data_type": "BIGINT",
+          "description": "当日活跃用户数"
+        },
+        {
+          "field_name": "paying_users",
+          "field_cn_name": "付费用户数",
+          "data_type": "BIGINT",
+          "description": "当日有支付行为的去重用户数"
+        },
+        {
+          "field_name": "gmv_per_user",
+          "field_cn_name": "人均GMV",
+          "data_type": "DECIMAL(12,2)",
+          "description": "人均GMV = 当日GMV / 付费用户数"
+        },
+        {
+          "field_name": "orders_per_user",
+          "field_cn_name": "人均订单数",
+          "data_type": "DECIMAL(5,2)",
+          "description": "人均订单数 = 当日订单数 / 付费用户数"
+        },
+        {
+          "field_name": "total_users",
+          "field_cn_name": "累计用户",
+          "data_type": "BIGINT",
+          "description": "截至当日的累计注册用户数"
+        }
+      ]
+    },
+    {
+      "table_name": "ads_sales_kpi",
+      "table_cn_name": "销售KPI指标表",
+      "description": "应用层销售核心指标表，面向业务人员的日报/月报数据源。包含GMV、订单数、客单价、转化率等关键销售指标及环比、同比数据。用于数据看板、经营日报、目标达成追踪。",
+      "datasource": "doris",
+      "layer": "ADS",
+      "keywords": [
+        "销售KPI",
+        "核心指标",
+        "GMV",
+        "转化率",
+        "客单价",
+        "sales KPI",
+        "经营指标",
+        "业绩"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "field_cn_name": "统计日期",
+          "data_type": "DATE",
+          "description": "KPI统计日期"
+        },
+        {
+          "field_name": "kpi_name",
+          "field_cn_name": "指标名称",
+          "data_type": "VARCHAR(50)",
+          "description": "指标名称：GMV、订单数、用户数、客单价、转化率、实付金额、利润"
+        },
+        {
+          "field_name": "kpi_value",
+          "field_cn_name": "指标值",
+          "data_type": "DECIMAL(18,2)",
+          "description": "指标数值"
+        },
+        {
+          "field_name": "kpi_unit",
+          "field_cn_name": "单位",
+          "data_type": "VARCHAR(20)",
+          "description": "单位：元、单、人、%"
+        },
+        {
+          "field_name": "mom_growth",
+          "field_cn_name": "环比",
+          "data_type": "DECIMAL(5,2)",
+          "description": "环比变化率，与上一周期对比"
+        },
+        {
+          "field_name": "yoy_growth",
+          "field_cn_name": "同比",
+          "data_type": "DECIMAL(5,2)",
+          "description": "同比变化率，与去年同期对比"
+        }
+      ]
+    },
+    {
+      "table_name": "ads_user_retention",
+      "table_cn_name": "用户留存分析表",
+      "description": "应用层用户留存分析表，记录不同注册日期的用户群体在后续日期的留存情况。支持计算次日留存、3日留存、7日留存、30日留存。用于留存趋势分析、 cohort分析、用户质量评估。",
+      "datasource": "doris",
+      "layer": "ADS",
+      "keywords": [
+        "留存率",
+        "用户留存",
+        "次日留存",
+        "7日留存",
+        "30日留存",
+        "retention",
+        "cohort分析"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "field_cn_name": "统计日期",
+          "data_type": "DATE",
+          "description": "留存统计日期"
+        },
+        {
+          "field_name": "register_date",
+          "field_cn_name": "注册日期",
+          "data_type": "DATE",
+          "description": "用户注册日期（cohort分组依据）"
+        },
+        {
+          "field_name": "retention_day",
+          "field_cn_name": "留存天数",
+          "data_type": "INT",
+          "description": "留存天数：1表示次日，3表示3日，7表示7日，30表示30日"
+        },
+        {
+          "field_name": "new_user_count",
+          "field_cn_name": "新增用户数",
+          "data_type": "BIGINT",
+          "description": "注册日期当天的新增用户数"
+        },
+        {
+          "field_name": "retained_user_count",
+          "field_cn_name": "留存用户数",
+          "data_type": "BIGINT",
+          "description": "注册日期 cohort 中，在统计日期仍活跃的用户数"
+        },
+        {
+          "field_name": "retention_rate",
+          "field_cn_name": "留存率",
+          "data_type": "DECIMAL(5,2)",
+          "description": "留存率 = 留存用户数 / 新增用户数，如0.35表示35%留存"
+        }
+      ]
+    },
+    {
+      "table_name": "ads_region_rank",
+      "table_cn_name": "地区销售排行表",
+      "description": "应用层地区销售排行榜，按月统计各省份/城市的销售排名、市场份额。包含GMV排名、订单数排名、市场份额占比。用于区域业绩对比、城市拓展决策、区域资源分配。",
+      "datasource": "doris",
+      "layer": "ADS",
+      "keywords": [
+        "地区排行",
+        "省份排名",
+        "城市排名",
+        "区域销售",
+        "市场份额",
+        "region rank",
+        "地区业绩"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "field_cn_name": "统计日期",
+          "data_type": "DATE",
+          "description": "统计日期"
+        },
+        {
+          "field_name": "province_id",
+          "field_cn_name": "省份ID",
+          "data_type": "INT",
+          "description": "省份ID"
+        },
+        {
+          "field_name": "province_name",
+          "field_cn_name": "省份名称",
+          "data_type": "VARCHAR(50)",
+          "description": "省份名称，如'广东省'、'北京市'"
+        },
+        {
+          "field_name": "gmv",
+          "field_cn_name": "GMV",
+          "data_type": "DECIMAL(18,2)",
+          "description": "该地区GMV"
+        },
+        {
+          "field_name": "order_count",
+          "field_cn_name": "订单数",
+          "data_type": "BIGINT",
+          "description": "该地区订单数"
+        },
+        {
+          "field_name": "user_count",
+          "field_cn_name": "下单用户数",
+          "data_type": "BIGINT",
+          "description": "该地区下单用户数"
+        },
+        {
+          "field_name": "gmv_rank",
+          "field_cn_name": "GMV排名",
+          "data_type": "INT",
+          "description": "该地区GMV在全国排名，1表示第一名"
+        },
+        {
+          "field_name": "gmv_share",
+          "field_cn_name": "GMV占比",
+          "data_type": "DECIMAL(5,4)",
+          "description": "该地区GMV占全国比例，如0.15表示15%"
+        }
+      ]
+    },
+    {
+      "table_name": "ads_category_rank",
+      "table_cn_name": "类目销售排行表",
+      "description": "应用层类目销售排行榜，按月统计各类目的销售排名、市场份额。包含类目GMV、订单数、销售商品数、市场占比。用于类目运营分析、品类规划、资源投放决策。",
+      "datasource": "doris",
+      "layer": "ADS",
+      "keywords": [
+        "类目排行",
+        "品类排名",
+        "类目销售",
+        "品类份额",
+        "category rank",
+        "品类业绩",
+        "类目GMV"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "field_cn_name": "统计日期",
+          "data_type": "DATE",
+          "description": "统计日期"
+        },
+        {
+          "field_name": "category_id",
+          "field_cn_name": "类目ID",
+          "data_type": "INT",
+          "description": "类目ID"
+        },
+        {
+          "field_name": "category_name",
+          "field_cn_name": "类目名称",
+          "data_type": "VARCHAR(100)",
+          "description": "类目名称"
+        },
+        {
+          "field_name": "gmv",
+          "field_cn_name": "GMV",
+          "data_type": "DECIMAL(18,2)",
+          "description": "该类目当月GMV"
+        },
+        {
+          "field_name": "order_count",
+          "field_cn_name": "订单数",
+          "data_type": "BIGINT",
+          "description": "该类目当月订单数"
+        },
+        {
+          "field_name": "product_count",
+          "field_cn_name": "商品种数",
+          "data_type": "BIGINT",
+          "description": "该类目下销售的商品SKU种数"
+        },
+        {
+          "field_name": "gmv_rank",
+          "field_cn_name": "GMV排名",
+          "data_type": "INT",
+          "description": "该类目GMV排名，1表示第一名"
+        },
+        {
+          "field_name": "gmv_share",
+          "field_cn_name": "GMV占比",
+          "data_type": "DECIMAL(5,4)",
+          "description": "该类目GMV占全站比例，如0.20表示20%"
+        }
+      ]
+    },
+    {
+      "table_name": "ods_users",
+      "table_cn_name": "ODS用户源数据表",
+      "description": "ODS层用户数据镜像，从MySQL users表同步的原始数据。包含用户注册信息、基础属性、地域信息。用于数据仓库ETL加工的源头数据。",
+      "datasource": "doris",
+      "layer": "ODS",
+      "keywords": [
+        "ODS用户",
+        "用户源数据",
+        "用户镜像",
+        "原始数据",
+        "ODS"
+      ],
+      "fields": [
+        {
+          "field_name": "user_id",
+          "field_cn_name": "用户ID",
+          "data_type": "BIGINT",
+          "description": "用户唯一标识"
+        },
+        {
+          "field_name": "username",
+          "field_cn_name": "用户名",
+          "data_type": "VARCHAR(50)",
+          "description": "用户昵称"
+        },
+        {
+          "field_name": "email",
+          "field_cn_name": "邮箱",
+          "data_type": "VARCHAR(100)",
+          "description": "用户邮箱"
+        },
+        {
+          "field_name": "phone",
+          "field_cn_name": "手机号",
+          "data_type": "VARCHAR(20)",
+          "description": "用户手机号"
+        },
+        {
+          "field_name": "gender",
+          "field_cn_name": "性别",
+          "data_type": "TINYINT",
+          "description": "0女，1男"
+        },
+        {
+          "field_name": "birthday",
+          "field_cn_name": "生日",
+          "data_type": "DATE",
+          "description": "用户生日"
+        },
+        {
+          "field_name": "register_time",
+          "field_cn_name": "注册时间",
+          "data_type": "DATETIME",
+          "description": "用户注册时间"
+        },
+        {
+          "field_name": "last_login_time",
+          "field_cn_name": "最后登录时间",
+          "data_type": "DATETIME",
+          "description": "最后登录时间"
+        },
+        {
+          "field_name": "user_status",
+          "field_cn_name": "用户状态",
+          "data_type": "TINYINT",
+          "description": "0禁用，1正常"
+        },
+        {
+          "field_name": "city_id",
+          "field_cn_name": "城市ID",
+          "data_type": "INT",
+          "description": "城市ID"
+        },
+        {
+          "field_name": "province_id",
+          "field_cn_name": "省份ID",
+          "data_type": "INT",
+          "description": "省份ID"
+        },
+        {
+          "field_name": "etl_time",
+          "field_cn_name": "ETL时间",
+          "data_type": "DATETIME",
+          "description": "数据同步时间"
+        }
+      ]
+    },
+    {
+      "table_name": "ods_products",
+      "table_cn_name": "ODS商品源数据表",
+      "description": "ODS层商品数据镜像，从MySQL products表同步的原始数据。包含商品基础信息、价格、成本、库存状态。用于数仓ETL加工的源头数据。",
+      "datasource": "doris",
+      "layer": "ODS",
+      "keywords": [
+        "ODS商品",
+        "商品源数据",
+        "商品镜像",
+        "原始数据",
+        "ODS"
+      ],
+      "fields": [
+        {
+          "field_name": "product_id",
+          "field_cn_name": "商品ID",
+          "data_type": "BIGINT",
+          "description": "商品唯一标识"
+        },
+        {
+          "field_name": "product_name",
+          "field_cn_name": "商品名称",
+          "data_type": "VARCHAR(200)",
+          "description": "商品名称"
+        },
+        {
+          "field_name": "category_id",
+          "field_cn_name": "类目ID",
+          "data_type": "INT",
+          "description": "类目ID"
+        },
+        {
+          "field_name": "brand_id",
+          "field_cn_name": "品牌ID",
+          "data_type": "INT",
+          "description": "品牌ID"
+        },
+        {
+          "field_name": "price",
+          "field_cn_name": "售价",
+          "data_type": "DECIMAL(12,2)",
+          "description": "商品售价"
+        },
+        {
+          "field_name": "cost",
+          "field_cn_name": "成本",
+          "data_type": "DECIMAL(12,2)",
+          "description": "商品成本"
+        },
+        {
+          "field_name": "stock",
+          "field_cn_name": "库存",
+          "data_type": "INT",
+          "description": "库存数量"
+        },
+        {
+          "field_name": "status",
+          "field_cn_name": "状态",
+          "data_type": "TINYINT",
+          "description": "0下架，1上架"
+        },
+        {
+          "field_name": "create_time",
+          "field_cn_name": "创建时间",
+          "data_type": "DATETIME",
+          "description": "商品创建时间"
+        },
+        {
+          "field_name": "update_time",
+          "field_cn_name": "更新时间",
+          "data_type": "DATETIME",
+          "description": "商品更新时间"
+        },
+        {
+          "field_name": "etl_time",
+          "field_cn_name": "ETL时间",
+          "data_type": "DATETIME",
+          "description": "数据同步时间"
+        }
+      ]
+    },
+    {
+      "table_name": "ods_orders",
+      "table_cn_name": "ODS订单源数据表",
+      "description": "ODS层订单数据镜像，从MySQL orders表同步的原始数据。包含订单主信息、金额、状态、支付信息。用于数仓ETL加工的源头数据。",
+      "datasource": "doris",
+      "layer": "ODS",
+      "keywords": [
+        "ODS订单",
+        "订单源数据",
+        "订单镜像",
+        "原始数据",
+        "ODS"
+      ],
+      "fields": [
+        {
+          "field_name": "order_id",
+          "field_cn_name": "订单ID",
+          "data_type": "BIGINT",
+          "description": "订单唯一标识"
+        },
+        {
+          "field_name": "user_id",
+          "field_cn_name": "用户ID",
+          "data_type": "BIGINT",
+          "description": "下单用户ID"
+        },
+        {
+          "field_name": "order_status",
+          "field_cn_name": "订单状态",
+          "data_type": "TINYINT",
+          "description": "1待支付，2已支付，3已发货，4已完成，5已取消"
+        },
+        {
+          "field_name": "total_amount",
+          "field_cn_name": "订单金额",
+          "data_type": "DECIMAL(12,2)",
+          "description": "订单总金额"
+        },
+        {
+          "field_name": "discount_amount",
+          "field_cn_name": "优惠金额",
+          "data_type": "DECIMAL(12,2)",
+          "description": "优惠金额"
+        },
+        {
+          "field_name": "pay_amount",
+          "field_cn_name": "实付金额",
+          "data_type": "DECIMAL(12,2)",
+          "description": "实付金额"
+        },
+        {
+          "field_name": "pay_type",
+          "field_cn_name": "支付方式",
+          "data_type": "TINYINT",
+          "description": "支付方式"
+        },
+        {
+          "field_name": "pay_time",
+          "field_cn_name": "支付时间",
+          "data_type": "DATETIME",
+          "description": "支付时间"
+        },
+        {
+          "field_name": "ship_time",
+          "field_cn_name": "发货时间",
+          "data_type": "DATETIME",
+          "description": "发货时间"
+        },
+        {
+          "field_name": "receive_time",
+          "field_cn_name": "收货时间",
+          "data_type": "DATETIME",
+          "description": "收货时间"
+        },
+        {
+          "field_name": "create_time",
+          "field_cn_name": "创建时间",
+          "data_type": "DATETIME",
+          "description": "订单创建时间"
+        },
+        {
+          "field_name": "update_time",
+          "field_cn_name": "更新时间",
+          "data_type": "DATETIME",
+          "description": "订单更新时间"
+        },
+        {
+          "field_name": "address_id",
+          "field_cn_name": "地址ID",
+          "data_type": "BIGINT",
+          "description": "收货地址ID"
+        },
+        {
+          "field_name": "remark",
+          "field_cn_name": "订单备注",
+          "data_type": "VARCHAR(500)",
+          "description": "订单备注信息"
+        },
+        {
+          "field_name": "etl_time",
+          "field_cn_name": "ETL时间",
+          "data_type": "DATETIME",
+          "description": "数据同步时间"
+        }
+      ]
+    },
+    {
+      "table_name": "ods_order_items",
+      "table_cn_name": "ODS订单明细源数据表",
+      "description": "ODS层订单明细数据镜像，从MySQL order_items表同步的原始数据。包含订单商品行项目信息。用于数仓ETL加工的源头数据。",
+      "datasource": "doris",
+      "layer": "ODS",
+      "keywords": [
+        "ODS订单明细",
+        "订单明细源数据",
+        "订单行镜像",
+        "原始数据",
+        "ODS"
+      ],
+      "fields": [
+        {
+          "field_name": "item_id",
+          "field_cn_name": "明细ID",
+          "data_type": "BIGINT",
+          "description": "明细唯一标识"
+        },
+        {
+          "field_name": "order_id",
+          "field_cn_name": "订单ID",
+          "data_type": "BIGINT",
+          "description": "所属订单ID"
+        },
+        {
+          "field_name": "product_id",
+          "field_cn_name": "商品ID",
+          "data_type": "BIGINT",
+          "description": "商品ID"
+        },
+        {
+          "field_name": "product_name",
+          "field_cn_name": "商品名称",
+          "data_type": "VARCHAR(200)",
+          "description": "商品名称快照"
+        },
+        {
+          "field_name": "quantity",
+          "field_cn_name": "数量",
+          "data_type": "INT",
+          "description": "购买数量"
+        },
+        {
+          "field_name": "unit_price",
+          "field_cn_name": "单价",
+          "data_type": "DECIMAL(12,2)",
+          "description": "商品单价"
+        },
+        {
+          "field_name": "total_amount",
+          "field_cn_name": "小计金额",
+          "data_type": "DECIMAL(12,2)",
+          "description": "小计金额"
+        }
+      ]
+    },
+    {
+      "table_name": "dim_user_segment",
+      "table_cn_name": "用户分层维度表",
+      "description": "用户分层维度表，定义RFM分层、生命周期阶段、价值分层等标签。用于用户运营分析和精准营销。",
+      "datasource": "doris",
+      "layer": "DIM",
+      "keywords": [
+        "用户分层",
+        "RFM",
+        "生命周期",
+        "价值分层",
+        "用户标签",
+        "user segment"
+      ],
+      "fields": [
+        {
+          "field_name": "segment_id",
+          "field_cn_name": "分层ID",
+          "data_type": "INT",
+          "description": "分层唯一标识"
+        },
+        {
+          "field_name": "segment_name",
+          "field_cn_name": "分层名称",
+          "data_type": "VARCHAR(50)",
+          "description": "分层名称，如新客、活跃、沉睡、流失"
+        },
+        {
+          "field_name": "segment_type",
+          "field_cn_name": "分层类型",
+          "data_type": "VARCHAR(20)",
+          "description": "分层类型：rfm/lifecycle/value"
+        },
+        {
+          "field_name": "description",
+          "field_cn_name": "描述",
+          "data_type": "VARCHAR(200)",
+          "description": "分层业务说明"
+        }
+      ]
+    },
+    {
+      "table_name": "dim_marketing_channel",
+      "table_cn_name": "营销渠道维度表",
+      "description": "营销渠道维度表，记录广告投放渠道、自然流量来源、活动来源等。用于营销ROI分析和渠道效果评估。",
+      "datasource": "doris",
+      "layer": "DIM",
+      "keywords": [
+        "营销渠道",
+        "广告投放",
+        "流量来源",
+        "渠道维度",
+        "marketing channel",
+        "UTM"
+      ],
+      "fields": [
+        {
+          "field_name": "channel_id",
+          "field_cn_name": "渠道ID",
+          "data_type": "INT",
+          "description": "渠道唯一标识"
+        },
+        {
+          "field_name": "channel_name",
+          "field_cn_name": "渠道名称",
+          "data_type": "VARCHAR(50)",
+          "description": "渠道名称，如抖音、微信、百度、自然搜索"
+        },
+        {
+          "field_name": "channel_type",
+          "field_cn_name": "渠道类型",
+          "data_type": "VARCHAR(20)",
+          "description": "渠道类型：paid/organic/social/email"
+        },
+        {
+          "field_name": "parent_channel_id",
+          "field_cn_name": "父渠道ID",
+          "data_type": "INT",
+          "description": "父级渠道ID，用于层级渠道结构"
+        }
+      ]
+    },
+    {
+      "table_name": "dwd_user_login",
+      "table_cn_name": "用户登录事实表",
+      "description": "用户登录行为事实表，记录每次登录的时间、终端、地域等信息。用于活跃天数、登录频次、终端分布分析。",
+      "datasource": "doris",
+      "layer": "DWD",
+      "keywords": [
+        "用户登录",
+        "登录行为",
+        "活跃天数",
+        "终端分布",
+        "user login"
+      ],
+      "fields": [
+        {
+          "field_name": "login_id",
+          "field_cn_name": "登录ID",
+          "data_type": "BIGINT",
+          "description": "登录行为唯一标识"
+        },
+        {
+          "field_name": "user_id",
+          "field_cn_name": "用户ID",
+          "data_type": "BIGINT",
+          "description": "登录用户ID"
+        },
+        {
+          "field_name": "login_date",
+          "field_cn_name": "登录日期",
+          "data_type": "DATE",
+          "description": "登录日期"
+        },
+        {
+          "field_name": "login_time",
+          "field_cn_name": "登录时间",
+          "data_type": "DATETIME",
+          "description": "登录具体时间"
+        },
+        {
+          "field_name": "device_type",
+          "field_cn_name": "设备类型",
+          "data_type": "VARCHAR(20)",
+          "description": "设备类型：iOS/Android/PC/H5"
+        },
+        {
+          "field_name": "province_id",
+          "field_cn_name": "省份ID",
+          "data_type": "INT",
+          "description": "登录省份ID"
+        },
+        {
+          "field_name": "channel_id",
+          "field_cn_name": "渠道ID",
+          "data_type": "INT",
+          "description": "引流渠道ID"
+        }
+      ]
+    },
+    {
+      "table_name": "dwd_marketing_event",
+      "table_cn_name": "营销事件事实表",
+      "description": "营销事件事实表，记录每次广告投放、促销活动、优惠券发放等行为。用于营销成本核算和效果归因。",
+      "datasource": "doris",
+      "layer": "DWD",
+      "keywords": [
+        "营销事件",
+        "广告投放",
+        "促销活动",
+        "优惠券",
+        "marketing event"
+      ],
+      "fields": [
+        {
+          "field_name": "event_id",
+          "field_cn_name": "事件ID",
+          "data_type": "BIGINT",
+          "description": "营销事件唯一标识"
+        },
+        {
+          "field_name": "event_date",
+          "field_cn_name": "事件日期",
+          "data_type": "DATE",
+          "description": "事件发生日期"
+        },
+        {
+          "field_name": "channel_id",
+          "field_cn_name": "渠道ID",
+          "data_type": "INT",
+          "description": "投放渠道ID"
+        },
+        {
+          "field_name": "event_type",
+          "field_cn_name": "事件类型",
+          "data_type": "VARCHAR(20)",
+          "description": "事件类型：ad/coupon/promotion"
+        },
+        {
+          "field_name": "cost_amount",
+          "field_cn_name": "花费金额",
+          "data_type": "DECIMAL(18,2)",
+          "description": "营销花费金额"
+        },
+        {
+          "field_name": "impressions",
+          "field_cn_name": "曝光量",
+          "data_type": "BIGINT",
+          "description": "广告曝光次数"
+        },
+        {
+          "field_name": "clicks",
+          "field_cn_name": "点击量",
+          "data_type": "BIGINT",
+          "description": "广告点击次数"
+        },
+        {
+          "field_name": "conversions",
+          "field_cn_name": "转化数",
+          "data_type": "BIGINT",
+          "description": "转化订单数"
+        }
+      ]
+    },
+    {
+      "table_name": "dws_member_daily",
+      "table_cn_name": "会员日汇总表",
+      "description": "会员运营日汇总表，按日期统计会员新增、活跃、续费、流失等核心指标。用于会员生命周期管理和运营决策。",
+      "datasource": "doris",
+      "layer": "DWS",
+      "keywords": [
+        "会员日汇总",
+        "会员新增",
+        "会员活跃",
+        "会员续费",
+        "member daily"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "field_cn_name": "统计日期",
+          "data_type": "DATE",
+          "description": "统计日期"
+        },
+        {
+          "field_name": "segment_id",
+          "field_cn_name": "分层ID",
+          "data_type": "INT",
+          "description": "会员分层ID"
+        },
+        {
+          "field_name": "new_members",
+          "field_cn_name": "新增会员",
+          "data_type": "BIGINT",
+          "description": "当日新增会员数"
+        },
+        {
+          "field_name": "active_members",
+          "field_cn_name": "活跃会员",
+          "data_type": "BIGINT",
+          "description": "当日活跃会员数"
+        },
+        {
+          "field_name": "renew_members",
+          "field_cn_name": "续费会员",
+          "data_type": "BIGINT",
+          "description": "当日续费会员数"
+        },
+        {
+          "field_name": "churn_members",
+          "field_cn_name": "流失会员",
+          "data_type": "BIGINT",
+          "description": "当日流失会员数"
+        },
+        {
+          "field_name": "member_gmv",
+          "field_cn_name": "会员GMV",
+          "data_type": "DECIMAL(18,2)",
+          "description": "会员贡献GMV"
+        }
+      ]
+    },
+    {
+      "table_name": "dws_marketing_daily",
+      "table_cn_name": "营销日汇总表",
+      "description": "营销效果日汇总表，按日期和渠道汇总曝光、点击、转化、花费、ROI等指标。用于营销效果监控和预算优化。",
+      "datasource": "doris",
+      "layer": "DWS",
+      "keywords": [
+        "营销日汇总",
+        "投放效果",
+        "渠道ROI",
+        "点击率",
+        "marketing daily"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "field_cn_name": "统计日期",
+          "data_type": "DATE",
+          "description": "统计日期"
+        },
+        {
+          "field_name": "channel_id",
+          "field_cn_name": "渠道ID",
+          "data_type": "INT",
+          "description": "渠道ID"
+        },
+        {
+          "field_name": "impressions",
+          "field_cn_name": "曝光量",
+          "data_type": "BIGINT",
+          "description": "总曝光量"
+        },
+        {
+          "field_name": "clicks",
+          "field_cn_name": "点击量",
+          "data_type": "BIGINT",
+          "description": "总点击量"
+        },
+        {
+          "field_name": "conversions",
+          "field_cn_name": "转化数",
+          "data_type": "BIGINT",
+          "description": "总转化数"
+        },
+        {
+          "field_name": "cost_amount",
+          "field_cn_name": "花费金额",
+          "data_type": "DECIMAL(18,2)",
+          "description": "总花费"
+        },
+        {
+          "field_name": "conversion_gmv",
+          "field_cn_name": "转化GMV",
+          "data_type": "DECIMAL(18,2)",
+          "description": "转化带来的GMV"
+        }
+      ]
+    },
+    {
+      "table_name": "ads_member_lifecycle",
+      "table_cn_name": "会员生命周期指标表",
+      "description": "应用层会员生命周期指标表，面向会员运营团队。包含会员总数、活跃率、续费率、ARPU等核心会员指标。",
+      "datasource": "doris",
+      "layer": "ADS",
+      "keywords": [
+        "会员生命周期",
+        "会员指标",
+        "续费率",
+        "ARPU",
+        "member lifecycle"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "field_cn_name": "统计日期",
+          "data_type": "DATE",
+          "description": "统计日期"
+        },
+        {
+          "field_name": "segment_name",
+          "field_cn_name": "分层名称",
+          "data_type": "VARCHAR(50)",
+          "description": "会员分层"
+        },
+        {
+          "field_name": "member_count",
+          "field_cn_name": "会员数",
+          "data_type": "BIGINT",
+          "description": "该分层会员数"
+        },
+        {
+          "field_name": "active_rate",
+          "field_cn_name": "活跃率",
+          "data_type": "DECIMAL(5,4)",
+          "description": "活跃率"
+        },
+        {
+          "field_name": "renewal_rate",
+          "field_cn_name": "续费率",
+          "data_type": "DECIMAL(5,4)",
+          "description": "续费率"
+        },
+        {
+          "field_name": "arpu",
+          "field_cn_name": "人均贡献",
+          "data_type": "DECIMAL(12,2)",
+          "description": "人均ARPU"
+        }
+      ]
+    },
+    {
+      "table_name": "ads_marketing_roi",
+      "table_cn_name": "营销ROI指标表",
+      "description": "应用层营销ROI指标表，面向市场投放团队。包含各渠道花费、转化GMV、ROI、CAC、点击率等指标。",
+      "datasource": "doris",
+      "layer": "ADS",
+      "keywords": [
+        "营销ROI",
+        "渠道效果",
+        "投放ROI",
+        "CAC",
+        "点击率",
+        "marketing ROI"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "field_cn_name": "统计日期",
+          "data_type": "DATE",
+          "description": "统计日期"
+        },
+        {
+          "field_name": "channel_name",
+          "field_cn_name": "渠道名称",
+          "data_type": "VARCHAR(50)",
+          "description": "渠道名称"
+        },
+        {
+          "field_name": "cost_amount",
+          "field_cn_name": "花费金额",
+          "data_type": "DECIMAL(18,2)",
+          "description": "总花费"
+        },
+        {
+          "field_name": "conversion_gmv",
+          "field_cn_name": "转化GMV",
+          "data_type": "DECIMAL(18,2)",
+          "description": "转化GMV"
+        },
+        {
+          "field_name": "roi",
+          "field_cn_name": "ROI",
+          "data_type": "DECIMAL(8,4)",
+          "description": "ROI = 转化GMV / 花费"
+        },
+        {
+          "field_name": "cac",
+          "field_cn_name": "获客成本",
+          "data_type": "DECIMAL(12,2)",
+          "description": "CAC = 花费 / 转化数"
+        },
+        {
+          "field_name": "ctr",
+          "field_cn_name": "点击率",
+          "data_type": "DECIMAL(5,4)",
+          "description": "CTR = 点击 / 曝光"
+        }
+      ]
+    },
+    {
+      "table_name": "ods_inventory",
+      "table_cn_name": "ODS库存源数据表",
+      "description": "ODS层库存数据镜像，从WMS系统同步的原始库存记录。包含各仓库各SKU的实时库存、可用库存、在途库存等。",
+      "datasource": "doris",
+      "layer": "ODS",
+      "keywords": [
+        "ODS库存",
+        "库存源数据",
+        "WMS",
+        "原始数据",
+        "inventory"
+      ],
+      "fields": [
+        {
+          "field_name": "inventory_id",
+          "field_cn_name": "库存记录ID",
+          "data_type": "BIGINT",
+          "description": "库存记录唯一标识"
+        },
+        {
+          "field_name": "warehouse_id",
+          "field_cn_name": "仓库ID",
+          "data_type": "INT",
+          "description": "仓库ID"
+        },
+        {
+          "field_name": "product_id",
+          "field_cn_name": "商品ID",
+          "data_type": "BIGINT",
+          "description": "商品SKU ID"
+        },
+        {
+          "field_name": "quantity",
+          "field_cn_name": "库存数量",
+          "data_type": "INT",
+          "description": "实际库存数量"
+        },
+        {
+          "field_name": "available_qty",
+          "field_cn_name": "可用库存",
+          "data_type": "INT",
+          "description": "可销售库存"
+        },
+        {
+          "field_name": "reserved_qty",
+          "field_cn_name": "预留库存",
+          "data_type": "INT",
+          "description": "已预留未发货库存"
+        },
+        {
+          "field_name": "in_transit_qty",
+          "field_cn_name": "在途库存",
+          "data_type": "INT",
+          "description": "在途库存"
+        },
+        {
+          "field_name": "update_time",
+          "field_cn_name": "更新时间",
+          "data_type": "DATETIME",
+          "description": "库存更新时间"
+        },
+        {
+          "field_name": "etl_time",
+          "field_cn_name": "ETL时间",
+          "data_type": "DATETIME",
+          "description": "数据同步时间"
+        }
+      ]
+    },
+    {
+      "table_name": "ods_warehouses",
+      "table_cn_name": "ODS仓库源数据表",
+      "description": "ODS层仓库主数据镜像，从WMS同步的仓库基础信息。包含仓库类型、所在城市、容量、负责人等。",
+      "datasource": "doris",
+      "layer": "ODS",
+      "keywords": [
+        "ODS仓库",
+        "仓库源数据",
+        "WMS",
+        "warehouse",
+        "原始数据"
+      ],
+      "fields": [
+        {
+          "field_name": "warehouse_id",
+          "field_cn_name": "仓库ID",
+          "data_type": "INT",
+          "description": "仓库唯一标识"
+        },
+        {
+          "field_name": "warehouse_name",
+          "field_cn_name": "仓库名称",
+          "data_type": "VARCHAR(100)",
+          "description": "仓库名称"
+        },
+        {
+          "field_name": "warehouse_type",
+          "field_cn_name": "仓库类型",
+          "data_type": "VARCHAR(20)",
+          "description": "仓库类型：central/region/front"
+        },
+        {
+          "field_name": "province_id",
+          "field_cn_name": "省份ID",
+          "data_type": "INT",
+          "description": "所在省份ID"
+        },
+        {
+          "field_name": "city_id",
+          "field_cn_name": "城市ID",
+          "data_type": "INT",
+          "description": "所在城市ID"
+        },
+        {
+          "field_name": "capacity",
+          "field_cn_name": "仓库容量",
+          "data_type": "INT",
+          "description": "仓库容量（件数）"
+        },
+        {
+          "field_name": "manager_name",
+          "field_cn_name": "负责人",
+          "data_type": "VARCHAR(50)",
+          "description": "仓库负责人"
+        },
+        {
+          "field_name": "status",
+          "field_cn_name": "状态",
+          "data_type": "TINYINT",
+          "description": "0停用，1启用"
+        },
+        {
+          "field_name": "etl_time",
+          "field_cn_name": "ETL时间",
+          "data_type": "DATETIME",
+          "description": "数据同步时间"
+        }
+      ]
+    },
+    {
+      "table_name": "ods_purchase_orders",
+      "table_cn_name": "ODS采购订单源数据表",
+      "description": "ODS层采购订单镜像，从SRM/ERP系统同步的原始采购数据。包含采购单号、供应商、商品、数量、金额、状态等。",
+      "datasource": "doris",
+      "layer": "ODS",
+      "keywords": [
+        "ODS采购",
+        "采购订单",
+        "SRM",
+        "ERP",
+        "purchase order"
+      ],
+      "fields": [
+        {
+          "field_name": "po_id",
+          "field_cn_name": "采购单ID",
+          "data_type": "BIGINT",
+          "description": "采购单唯一标识"
+        },
+        {
+          "field_name": "supplier_id",
+          "field_cn_name": "供应商ID",
+          "data_type": "INT",
+          "description": "供应商ID"
+        },
+        {
+          "field_name": "warehouse_id",
+          "field_cn_name": "仓库ID",
+          "data_type": "INT",
+          "description": "入库仓库ID"
+        },
+        {
+          "field_name": "po_date",
+          "field_cn_name": "采购日期",
+          "data_type": "DATE",
+          "description": "采购下单日期"
+        },
+        {
+          "field_name": "total_amount",
+          "field_cn_name": "采购总金额",
+          "data_type": "DECIMAL(18,2)",
+          "description": "采购订单总金额"
+        },
+        {
+          "field_name": "status",
+          "field_cn_name": "订单状态",
+          "data_type": "TINYINT",
+          "description": "1待确认，2已发货，3已入库，4已取消"
+        },
+        {
+          "field_name": "delivery_date",
+          "field_cn_name": "预计到货日期",
+          "data_type": "DATE",
+          "description": "预计到货日期"
+        },
+        {
+          "field_name": "create_time",
+          "field_cn_name": "创建时间",
+          "data_type": "DATETIME",
+          "description": "创建时间"
+        },
+        {
+          "field_name": "etl_time",
+          "field_cn_name": "ETL时间",
+          "data_type": "DATETIME",
+          "description": "数据同步时间"
+        }
+      ]
+    },
+    {
+      "table_name": "ods_suppliers",
+      "table_cn_name": "ODS供应商源数据表",
+      "description": "ODS层供应商主数据镜像，从SRM系统同步。包含供应商名称、等级、合作状态、结算账期等。",
+      "datasource": "doris",
+      "layer": "ODS",
+      "keywords": [
+        "ODS供应商",
+        "供应商主数据",
+        "SRM",
+        "supplier",
+        "原始数据"
+      ],
+      "fields": [
+        {
+          "field_name": "supplier_id",
+          "field_cn_name": "供应商ID",
+          "data_type": "INT",
+          "description": "供应商唯一标识"
+        },
+        {
+          "field_name": "supplier_name",
+          "field_cn_name": "供应商名称",
+          "data_type": "VARCHAR(100)",
+          "description": "供应商名称"
+        },
+        {
+          "field_name": "supplier_level",
+          "field_cn_name": "供应商等级",
+          "data_type": "VARCHAR(10)",
+          "description": "等级：A/B/C/D"
+        },
+        {
+          "field_name": "cooperation_status",
+          "field_cn_name": "合作状态",
+          "data_type": "TINYINT",
+          "description": "0终止，1合作中，2待审核"
+        },
+        {
+          "field_name": "payment_terms",
+          "field_cn_name": "账期天数",
+          "data_type": "INT",
+          "description": "结算账期（天）"
+        },
+        {
+          "field_name": "province_id",
+          "field_cn_name": "省份ID",
+          "data_type": "INT",
+          "description": "供应商所在省份ID"
+        },
+        {
+          "field_name": "etl_time",
+          "field_cn_name": "ETL时间",
+          "data_type": "DATETIME",
+          "description": "数据同步时间"
+        }
+      ]
+    },
+    {
+      "table_name": "dim_warehouse",
+      "table_cn_name": "仓库维度表",
+      "description": "仓库维度表，从ODS清洗加工而来。包含仓库完整属性、地理信息、容量利用率等。用于库存分析和物流规划。",
+      "datasource": "doris",
+      "layer": "DIM",
+      "keywords": [
+        "仓库维度",
+        "物流中心",
+        "仓储",
+        "仓库属性",
+        "warehouse"
+      ],
+      "fields": [
+        {
+          "field_name": "warehouse_id",
+          "field_cn_name": "仓库ID",
+          "data_type": "INT",
+          "description": "仓库唯一标识"
+        },
+        {
+          "field_name": "warehouse_name",
+          "field_cn_name": "仓库名称",
+          "data_type": "VARCHAR(100)",
+          "description": "仓库名称"
+        },
+        {
+          "field_name": "warehouse_type",
+          "field_cn_name": "仓库类型",
+          "data_type": "VARCHAR(20)",
+          "description": "仓库类型"
+        },
+        {
+          "field_name": "province_name",
+          "field_cn_name": "省份",
+          "data_type": "VARCHAR(50)",
+          "description": "所在省份"
+        },
+        {
+          "field_name": "city_name",
+          "field_cn_name": "城市",
+          "data_type": "VARCHAR(50)",
+          "description": "所在城市"
+        },
+        {
+          "field_name": "capacity",
+          "field_cn_name": "仓库容量",
+          "data_type": "INT",
+          "description": "仓库容量（件数）"
+        },
+        {
+          "field_name": "status",
+          "field_cn_name": "状态",
+          "data_type": "TINYINT",
+          "description": "0停用，1启用"
+        }
+      ]
+    },
+    {
+      "table_name": "dim_supplier",
+      "table_cn_name": "供应商维度表",
+      "description": "供应商维度表，从ODS清洗加工而来。包含供应商等级、评分、合作年限、主营类目等。用于供应商绩效分析。",
+      "datasource": "doris",
+      "layer": "DIM",
+      "keywords": [
+        "供应商维度",
+        "供应商绩效",
+        "供应商等级",
+        "supplier",
+        "vendor"
+      ],
+      "fields": [
+        {
+          "field_name": "supplier_id",
+          "field_cn_name": "供应商ID",
+          "data_type": "INT",
+          "description": "供应商唯一标识"
+        },
+        {
+          "field_name": "supplier_name",
+          "field_cn_name": "供应商名称",
+          "data_type": "VARCHAR(100)",
+          "description": "供应商名称"
+        },
+        {
+          "field_name": "supplier_level",
+          "field_cn_name": "供应商等级",
+          "data_type": "VARCHAR(10)",
+          "description": "A/B/C/D等级"
+        },
+        {
+          "field_name": "category_id",
+          "field_cn_name": "主营类目ID",
+          "data_type": "INT",
+          "description": "主营商品类目ID"
+        },
+        {
+          "field_name": "cooperation_years",
+          "field_cn_name": "合作年限",
+          "data_type": "INT",
+          "description": "合作年数"
+        },
+        {
+          "field_name": "rating_score",
+          "field_cn_name": "评分",
+          "data_type": "DECIMAL(3,2)",
+          "description": "综合评分0-5"
+        },
+        {
+          "field_name": "status",
+          "field_cn_name": "合作状态",
+          "data_type": "TINYINT",
+          "description": "0终止，1合作中"
+        }
+      ]
+    },
+    {
+      "table_name": "dwd_inventory_movement",
+      "table_cn_name": "库存流水事实表",
+      "description": "库存流水事实表，记录每一次库存变动（入库、出库、盘点、调拨、报损）。用于库存周转和异动分析。",
+      "datasource": "doris",
+      "layer": "DWD",
+      "keywords": [
+        "库存流水",
+        "出入库",
+        "库存变动",
+        "调拨",
+        "inventory movement"
+      ],
+      "fields": [
+        {
+          "field_name": "movement_id",
+          "field_cn_name": "流水ID",
+          "data_type": "BIGINT",
+          "description": "流水唯一标识"
+        },
+        {
+          "field_name": "movement_date",
+          "field_cn_name": "变动日期",
+          "data_type": "DATE",
+          "description": "库存变动日期"
+        },
+        {
+          "field_name": "warehouse_id",
+          "field_cn_name": "仓库ID",
+          "data_type": "INT",
+          "description": "仓库ID"
+        },
+        {
+          "field_name": "product_id",
+          "field_cn_name": "商品ID",
+          "data_type": "BIGINT",
+          "description": "商品ID"
+        },
+        {
+          "field_name": "movement_type",
+          "field_cn_name": "变动类型",
+          "data_type": "VARCHAR(20)",
+          "description": "变动类型：inbound/outbound/transfer/adjust/loss"
+        },
+        {
+          "field_name": "quantity",
+          "field_cn_name": "变动数量",
+          "data_type": "INT",
+          "description": "变动数量，正数为入库，负数为出库"
+        },
+        {
+          "field_name": "related_order_id",
+          "field_cn_name": "关联单号",
+          "data_type": "BIGINT",
+          "description": "关联采购单或销售单ID"
+        }
+      ]
+    },
+    {
+      "table_name": "dwd_purchase_detail",
+      "table_cn_name": "采购明细事实表",
+      "description": "采购明细事实表，从ODS采购订单拆解而来。每条记录代表一个采购订单中的SKU行。用于采购成本分析和供应商绩效评估。",
+      "datasource": "doris",
+      "layer": "DWD",
+      "keywords": [
+        "采购明细",
+        "采购成本",
+        "供应商分析",
+        "purchase detail"
+      ],
+      "fields": [
+        {
+          "field_name": "po_id",
+          "field_cn_name": "采购单ID",
+          "data_type": "BIGINT",
+          "description": "采购单ID"
+        },
+        {
+          "field_name": "po_item_id",
+          "field_cn_name": "明细ID",
+          "data_type": "BIGINT",
+          "description": "明细行唯一标识"
+        },
+        {
+          "field_name": "supplier_id",
+          "field_cn_name": "供应商ID",
+          "data_type": "INT",
+          "description": "供应商ID"
+        },
+        {
+          "field_name": "warehouse_id",
+          "field_cn_name": "仓库ID",
+          "data_type": "INT",
+          "description": "入库仓库ID"
+        },
+        {
+          "field_name": "product_id",
+          "field_cn_name": "商品ID",
+          "data_type": "BIGINT",
+          "description": "商品ID"
+        },
+        {
+          "field_name": "quantity",
+          "field_cn_name": "采购数量",
+          "data_type": "INT",
+          "description": "采购数量"
+        },
+        {
+          "field_name": "unit_price",
+          "field_cn_name": "采购单价",
+          "data_type": "DECIMAL(12,2)",
+          "description": "采购单价"
+        },
+        {
+          "field_name": "total_amount",
+          "field_cn_name": "采购金额",
+          "data_type": "DECIMAL(18,2)",
+          "description": "该SKU采购金额"
+        },
+        {
+          "field_name": "po_date",
+          "field_cn_name": "采购日期",
+          "data_type": "DATE",
+          "description": "采购日期"
+        },
+        {
+          "field_name": "delivery_date",
+          "field_cn_name": "预计到货日期",
+          "data_type": "DATE",
+          "description": "预计到货日期"
+        }
+      ]
+    },
+    {
+      "table_name": "dws_inventory_daily",
+      "table_cn_name": "库存日汇总表",
+      "description": "库存日汇总表，按日期、仓库、SKU汇总期初库存、入库、出库、期末库存等。用于库存监控和周转分析。",
+      "datasource": "doris",
+      "layer": "DWS",
+      "keywords": [
+        "库存日汇总",
+        "每日库存",
+        "出入库汇总",
+        "inventory daily"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "field_cn_name": "统计日期",
+          "data_type": "DATE",
+          "description": "统计日期"
+        },
+        {
+          "field_name": "warehouse_id",
+          "field_cn_name": "仓库ID",
+          "data_type": "INT",
+          "description": "仓库ID"
+        },
+        {
+          "field_name": "product_id",
+          "field_cn_name": "商品ID",
+          "data_type": "BIGINT",
+          "description": "商品ID"
+        },
+        {
+          "field_name": "opening_qty",
+          "field_cn_name": "期初库存",
+          "data_type": "INT",
+          "description": "期初库存"
+        },
+        {
+          "field_name": "inbound_qty",
+          "field_cn_name": "入库数量",
+          "data_type": "INT",
+          "description": "当日入库"
+        },
+        {
+          "field_name": "outbound_qty",
+          "field_cn_name": "出库数量",
+          "data_type": "INT",
+          "description": "当日出库"
+        },
+        {
+          "field_name": "closing_qty",
+          "field_cn_name": "期末库存",
+          "data_type": "INT",
+          "description": "期末库存"
+        },
+        {
+          "field_name": "available_qty",
+          "field_cn_name": "可用库存",
+          "data_type": "INT",
+          "description": "期末可用库存"
+        }
+      ]
+    },
+    {
+      "table_name": "dws_purchase_monthly",
+      "table_cn_name": "采购月汇总表",
+      "description": "采购月汇总表，按月份、供应商、类目汇总采购金额、数量、订单数等。用于采购月报和供应商对账。",
+      "datasource": "doris",
+      "layer": "DWS",
+      "keywords": [
+        "采购月汇总",
+        "月度采购",
+        "供应商对账",
+        "purchase monthly"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_month",
+          "field_cn_name": "统计月份",
+          "data_type": "INT",
+          "description": "统计月份YYYYMM"
+        },
+        {
+          "field_name": "supplier_id",
+          "field_cn_name": "供应商ID",
+          "data_type": "INT",
+          "description": "供应商ID"
+        },
+        {
+          "field_name": "category_id",
+          "field_cn_name": "类目ID",
+          "data_type": "INT",
+          "description": "商品类目ID"
+        },
+        {
+          "field_name": "po_count",
+          "field_cn_name": "采购单数",
+          "data_type": "INT",
+          "description": "采购订单数"
+        },
+        {
+          "field_name": "po_quantity",
+          "field_cn_name": "采购数量",
+          "data_type": "INT",
+          "description": "采购商品总数"
+        },
+        {
+          "field_name": "po_amount",
+          "field_cn_name": "采购金额",
+          "data_type": "DECIMAL(18,2)",
+          "description": "采购总金额"
+        }
+      ]
+    },
+    {
+      "table_name": "ads_inventory_turnover",
+      "table_cn_name": "库存周转分析表",
+      "description": "应用层库存周转分析表，按仓库和SKU计算库存周转天数、周转率、缺货次数等。用于库存优化和补货决策。",
+      "datasource": "doris",
+      "layer": "ADS",
+      "keywords": [
+        "库存周转",
+        "周转天数",
+        "周转率",
+        "库存优化",
+        "inventory turnover"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_month",
+          "field_cn_name": "统计月份",
+          "data_type": "INT",
+          "description": "统计月份YYYYMM"
+        },
+        {
+          "field_name": "warehouse_id",
+          "field_cn_name": "仓库ID",
+          "data_type": "INT",
+          "description": "仓库ID"
+        },
+        {
+          "field_name": "product_id",
+          "field_cn_name": "商品ID",
+          "data_type": "BIGINT",
+          "description": "商品ID"
+        },
+        {
+          "field_name": "avg_inventory",
+          "field_cn_name": "平均库存",
+          "data_type": "INT",
+          "description": "月均库存"
+        },
+        {
+          "field_name": "turnover_days",
+          "field_cn_name": "周转天数",
+          "data_type": "DECIMAL(8,2)",
+          "description": "库存周转天数"
+        },
+        {
+          "field_name": "turnover_rate",
+          "field_cn_name": "周转率",
+          "data_type": "DECIMAL(8,4)",
+          "description": "库存周转率"
+        },
+        {
+          "field_name": "stockout_days",
+          "field_cn_name": "缺货天数",
+          "data_type": "INT",
+          "description": "当月缺货天数"
+        }
+      ]
+    },
+    {
+      "table_name": "ads_stock_alert",
+      "table_cn_name": "库存预警表",
+      "description": "应用层库存预警表，标识低于安全库存、超储、临期等异常库存。用于仓储运营日报和异常处理。",
+      "datasource": "doris",
+      "layer": "ADS",
+      "keywords": [
+        "库存预警",
+        "安全库存",
+        "缺货预警",
+        "超储",
+        "stock alert"
+      ],
+      "fields": [
+        {
+          "field_name": "alert_date",
+          "field_cn_name": "预警日期",
+          "data_type": "DATE",
+          "description": "预警日期"
+        },
+        {
+          "field_name": "warehouse_id",
+          "field_cn_name": "仓库ID",
+          "data_type": "INT",
+          "description": "仓库ID"
+        },
+        {
+          "field_name": "product_id",
+          "field_cn_name": "商品ID",
+          "data_type": "BIGINT",
+          "description": "商品ID"
+        },
+        {
+          "field_name": "alert_type",
+          "field_cn_name": "预警类型",
+          "data_type": "VARCHAR(20)",
+          "description": "预警类型：low_stock/over_stock/expiry"
+        },
+        {
+          "field_name": "current_qty",
+          "field_cn_name": "当前库存",
+          "data_type": "INT",
+          "description": "当前库存数量"
+        },
+        {
+          "field_name": "safety_stock",
+          "field_cn_name": "安全库存",
+          "data_type": "INT",
+          "description": "安全库存阈值"
+        },
+        {
+          "field_name": "suggest_replenish_qty",
+          "field_cn_name": "建议补货量",
+          "data_type": "INT",
+          "description": "建议补货数量"
+        }
+      ]
+    },
+    {
+      "table_name": "ods_subscriptions",
+      "table_cn_name": "ODS订阅源数据表",
+      "description": "ODS层订阅数据镜像，从计费系统同步的原始订阅记录。包含客户ID、套餐、订阅状态、开始/结束日期、MRR等。",
+      "datasource": "doris",
+      "layer": "ODS",
+      "keywords": [
+        "ODS订阅",
+        "订阅源数据",
+        "SaaS订阅",
+        "billing",
+        "subscription"
+      ],
+      "fields": [
+        {
+          "field_name": "subscription_id",
+          "field_cn_name": "订阅ID",
+          "data_type": "BIGINT",
+          "description": "订阅唯一标识"
+        },
+        {
+          "field_name": "customer_id",
+          "field_cn_name": "客户ID",
+          "data_type": "BIGINT",
+          "description": "客户唯一标识"
+        },
+        {
+          "field_name": "plan_id",
+          "field_cn_name": "套餐ID",
+          "data_type": "INT",
+          "description": "套餐ID"
+        },
+        {
+          "field_name": "status",
+          "field_cn_name": "订阅状态",
+          "data_type": "TINYINT",
+          "description": "1活跃，2取消，3暂停，4过期"
+        },
+        {
+          "field_name": "mrr",
+          "field_cn_name": "月度订阅费",
+          "data_type": "DECIMAL(12,2)",
+          "description": "月度经常性收入"
+        },
+        {
+          "field_name": "start_date",
+          "field_cn_name": "开始日期",
+          "data_type": "DATE",
+          "description": "订阅开始日期"
+        },
+        {
+          "field_name": "end_date",
+          "field_cn_name": "结束日期",
+          "data_type": "DATE",
+          "description": "订阅结束日期"
+        },
+        {
+          "field_name": "channel_id",
+          "field_cn_name": "渠道ID",
+          "data_type": "INT",
+          "description": "获客渠道ID"
+        },
+        {
+          "field_name": "create_time",
+          "field_cn_name": "创建时间",
+          "data_type": "DATETIME",
+          "description": "记录创建时间"
+        },
+        {
+          "field_name": "etl_time",
+          "field_cn_name": "ETL时间",
+          "data_type": "DATETIME",
+          "description": "数据同步时间"
+        }
+      ]
+    },
+    {
+      "table_name": "ods_payments",
+      "table_cn_name": "ODS付款源数据表",
+      "description": "ODS层付款交易镜像，从支付网关同步的原始交易记录。包含客户ID、金额、币种、支付方式、交易状态等。",
+      "datasource": "doris",
+      "layer": "ODS",
+      "keywords": [
+        "ODS付款",
+        "支付交易",
+        "payment",
+        "SaaS收款",
+        "原始数据"
+      ],
+      "fields": [
+        {
+          "field_name": "payment_id",
+          "field_cn_name": "付款ID",
+          "data_type": "BIGINT",
+          "description": "付款唯一标识"
+        },
+        {
+          "field_name": "customer_id",
+          "field_cn_name": "客户ID",
+          "data_type": "BIGINT",
+          "description": "客户ID"
+        },
+        {
+          "field_name": "subscription_id",
+          "field_cn_name": "订阅ID",
+          "data_type": "BIGINT",
+          "description": "关联订阅ID"
+        },
+        {
+          "field_name": "amount",
+          "field_cn_name": "付款金额",
+          "data_type": "DECIMAL(12,2)",
+          "description": "付款金额"
+        },
+        {
+          "field_name": "currency",
+          "field_cn_name": "币种",
+          "data_type": "VARCHAR(10)",
+          "description": "币种，如CNY/USD"
+        },
+        {
+          "field_name": "payment_date",
+          "field_cn_name": "付款日期",
+          "data_type": "DATE",
+          "description": "付款日期"
+        },
+        {
+          "field_name": "payment_method",
+          "field_cn_name": "支付方式",
+          "data_type": "VARCHAR(20)",
+          "description": "支付方式：alipay/wechat/bank_card"
+        },
+        {
+          "field_name": "status",
+          "field_cn_name": "交易状态",
+          "data_type": "TINYINT",
+          "description": "1成功，2失败，3退款"
+        },
+        {
+          "field_name": "etl_time",
+          "field_cn_name": "ETL时间",
+          "data_type": "DATETIME",
+          "description": "数据同步时间"
+        }
+      ]
+    },
+    {
+      "table_name": "ods_tickets",
+      "table_cn_name": "ODS工单源数据表",
+      "description": "ODS层客户工单镜像，从客服系统同步的原始工单数据。包含客户ID、工单类型、优先级、状态、处理时长、满意度等。",
+      "datasource": "doris",
+      "layer": "ODS",
+      "keywords": [
+        "ODS工单",
+        "客服工单",
+        "ticket",
+        "客户支持",
+        "原始数据"
+      ],
+      "fields": [
+        {
+          "field_name": "ticket_id",
+          "field_cn_name": "工单ID",
+          "data_type": "BIGINT",
+          "description": "工单唯一标识"
+        },
+        {
+          "field_name": "customer_id",
+          "field_cn_name": "客户ID",
+          "data_type": "BIGINT",
+          "description": "客户ID"
+        },
+        {
+          "field_name": "ticket_type",
+          "field_cn_name": "工单类型",
+          "data_type": "VARCHAR(20)",
+          "description": "工单类型：technical/billing/sales/general"
+        },
+        {
+          "field_name": "priority",
+          "field_cn_name": "优先级",
+          "data_type": "VARCHAR(10)",
+          "description": "优先级：low/medium/high/urgent"
+        },
+        {
+          "field_name": "status",
+          "field_cn_name": "状态",
+          "data_type": "VARCHAR(20)",
+          "description": "状态：open/pending/resolved/closed"
+        },
+        {
+          "field_name": "create_date",
+          "field_cn_name": "创建日期",
+          "data_type": "DATE",
+          "description": "工单创建日期"
+        },
+        {
+          "field_name": "resolve_date",
+          "field_cn_name": "解决日期",
+          "data_type": "DATE",
+          "description": "工单解决日期"
+        },
+        {
+          "field_name": "csat_score",
+          "field_cn_name": "满意度评分",
+          "data_type": "TINYINT",
+          "description": "客户满意度1-5分"
+        },
+        {
+          "field_name": "etl_time",
+          "field_cn_name": "ETL时间",
+          "data_type": "DATETIME",
+          "description": "数据同步时间"
+        }
+      ]
+    },
+    {
+      "table_name": "ods_app_events",
+      "table_cn_name": "ODS应用事件表",
+      "description": "ODS层应用埋点事件镜像，从数据仓库行为日志同步。包含用户ID、事件类型、事件时间、设备、会话ID等。",
+      "datasource": "doris",
+      "layer": "ODS",
+      "keywords": [
+        "ODS事件",
+        "埋点",
+        "应用事件",
+        "app events",
+        "行为日志"
+      ],
+      "fields": [
+        {
+          "field_name": "event_id",
+          "field_cn_name": "事件ID",
+          "data_type": "BIGINT",
+          "description": "事件唯一标识"
+        },
+        {
+          "field_name": "user_id",
+          "field_cn_name": "用户ID",
+          "data_type": "BIGINT",
+          "description": "用户ID"
+        },
+        {
+          "field_name": "event_name",
+          "field_cn_name": "事件名",
+          "data_type": "VARCHAR(50)",
+          "description": "事件名：login/page_view/feature_use"
+        },
+        {
+          "field_name": "event_date",
+          "field_cn_name": "事件日期",
+          "data_type": "DATE",
+          "description": "事件日期"
+        },
+        {
+          "field_name": "event_time",
+          "field_cn_name": "事件时间",
+          "data_type": "DATETIME",
+          "description": "事件发生时间"
+        },
+        {
+          "field_name": "device_type",
+          "field_cn_name": "设备类型",
+          "data_type": "VARCHAR(20)",
+          "description": "设备类型"
+        },
+        {
+          "field_name": "session_id",
+          "field_cn_name": "会话ID",
+          "data_type": "VARCHAR(50)",
+          "description": "会话ID"
+        },
+        {
+          "field_name": "etl_time",
+          "field_cn_name": "ETL时间",
+          "data_type": "DATETIME",
+          "description": "数据同步时间"
+        }
+      ]
+    },
+    {
+      "table_name": "dim_plan",
+      "table_cn_name": "套餐维度表",
+      "description": "SaaS套餐维度表，记录各套餐的名称、价格、周期、功能级别等。用于MRR分析和套餐升级分析。",
+      "datasource": "doris",
+      "layer": "DIM",
+      "keywords": [
+        "套餐维度",
+        "SaaS套餐",
+        "定价计划",
+        "plan",
+        "subscription plan"
+      ],
+      "fields": [
+        {
+          "field_name": "plan_id",
+          "field_cn_name": "套餐ID",
+          "data_type": "INT",
+          "description": "套餐唯一标识"
+        },
+        {
+          "field_name": "plan_name",
+          "field_cn_name": "套餐名称",
+          "data_type": "VARCHAR(50)",
+          "description": "套餐名称，如基础版/专业版/企业版"
+        },
+        {
+          "field_name": "plan_level",
+          "field_cn_name": "套餐级别",
+          "data_type": "INT",
+          "description": "套餐级别：1基础/2专业/3企业"
+        },
+        {
+          "field_name": "monthly_price",
+          "field_cn_name": "月价格",
+          "data_type": "DECIMAL(12,2)",
+          "description": "月付价格"
+        },
+        {
+          "field_name": "annual_price",
+          "field_cn_name": "年价格",
+          "data_type": "DECIMAL(12,2)",
+          "description": "年付价格"
+        },
+        {
+          "field_name": "billing_cycle",
+          "field_cn_name": "计费周期",
+          "data_type": "VARCHAR(20)",
+          "description": "monthly/annual"
+        },
+        {
+          "field_name": "status",
+          "field_cn_name": "状态",
+          "data_type": "TINYINT",
+          "description": "0下架，1上架"
+        }
+      ]
+    },
+    {
+      "table_name": "dim_channel",
+      "table_cn_name": "渠道维度表",
+      "description": "SaaS获客渠道维度表，记录各渠道的名称、类型、成本模型等。用于渠道ROI和CAC分析。",
+      "datasource": "doris",
+      "layer": "DIM",
+      "keywords": [
+        "渠道维度",
+        "获客渠道",
+        "SaaS渠道",
+        "channel",
+        "acquisition"
+      ],
+      "fields": [
+        {
+          "field_name": "channel_id",
+          "field_cn_name": "渠道ID",
+          "data_type": "INT",
+          "description": "渠道唯一标识"
+        },
+        {
+          "field_name": "channel_name",
+          "field_cn_name": "渠道名称",
+          "data_type": "VARCHAR(50)",
+          "description": "渠道名称，如SEO/SEM/内容营销/线下活动"
+        },
+        {
+          "field_name": "channel_type",
+          "field_cn_name": "渠道类型",
+          "data_type": "VARCHAR(20)",
+          "description": "类型：organic/paid/referral/partner"
+        },
+        {
+          "field_name": "cost_model",
+          "field_cn_name": "成本模型",
+          "data_type": "VARCHAR(20)",
+          "description": "cpc/cpm/cpa/fixed"
+        }
+      ]
+    },
+    {
+      "table_name": "dwd_subscription_events",
+      "table_cn_name": "订阅事件事实表",
+      "description": "订阅事件事实表，记录每一次订阅状态变更（新订、续费、升级、降级、取消）。用于流失分析和生命周期分析。",
+      "datasource": "doris",
+      "layer": "DWD",
+      "keywords": [
+        "订阅事件",
+        "新订",
+        "续费",
+        "取消",
+        "流失",
+        "subscription events"
+      ],
+      "fields": [
+        {
+          "field_name": "event_id",
+          "field_cn_name": "事件ID",
+          "data_type": "BIGINT",
+          "description": "事件唯一标识"
+        },
+        {
+          "field_name": "event_date",
+          "field_cn_name": "事件日期",
+          "data_type": "DATE",
+          "description": "事件日期"
+        },
+        {
+          "field_name": "customer_id",
+          "field_cn_name": "客户ID",
+          "data_type": "BIGINT",
+          "description": "客户ID"
+        },
+        {
+          "field_name": "subscription_id",
+          "field_cn_name": "订阅ID",
+          "data_type": "BIGINT",
+          "description": "订阅ID"
+        },
+        {
+          "field_name": "event_type",
+          "field_cn_name": "事件类型",
+          "data_type": "VARCHAR(20)",
+          "description": "事件类型：new/renewal/upgrade/downgrade/churn"
+        },
+        {
+          "field_name": "plan_id",
+          "field_cn_name": "套餐ID",
+          "data_type": "INT",
+          "description": "变更后套餐ID"
+        },
+        {
+          "field_name": "mrr_change",
+          "field_cn_name": "MRR变动",
+          "data_type": "DECIMAL(12,2)",
+          "description": "MRR变动金额"
+        },
+        {
+          "field_name": "previous_plan_id",
+          "field_cn_name": "原套餐ID",
+          "data_type": "INT",
+          "description": "变更前套餐ID"
+        }
+      ]
+    },
+    {
+      "table_name": "dwd_revenue_detail",
+      "table_cn_name": "收入明细事实表",
+      "description": "收入明细事实表，从付款记录拆解而来。包含客户、订阅、付款日期、金额、确认收入等。用于收入确认和财务分析。",
+      "datasource": "doris",
+      "layer": "DWD",
+      "keywords": [
+        "收入明细",
+        "财务分析",
+        "确认收入",
+        "revenue detail"
+      ],
+      "fields": [
+        {
+          "field_name": "revenue_id",
+          "field_cn_name": "收入ID",
+          "data_type": "BIGINT",
+          "description": "收入记录唯一标识"
+        },
+        {
+          "field_name": "payment_id",
+          "field_cn_name": "付款ID",
+          "data_type": "BIGINT",
+          "description": "关联付款ID"
+        },
+        {
+          "field_name": "customer_id",
+          "field_cn_name": "客户ID",
+          "data_type": "BIGINT",
+          "description": "客户ID"
+        },
+        {
+          "field_name": "subscription_id",
+          "field_cn_name": "订阅ID",
+          "data_type": "BIGINT",
+          "description": "订阅ID"
+        },
+        {
+          "field_name": "revenue_date",
+          "field_cn_name": "收入日期",
+          "data_type": "DATE",
+          "description": "收入归属日期"
+        },
+        {
+          "field_name": "gross_amount",
+          "field_cn_name": "总金额",
+          "data_type": "DECIMAL(12,2)",
+          "description": "付款总金额"
+        },
+        {
+          "field_name": "recognized_amount",
+          "field_cn_name": "确认收入",
+          "data_type": "DECIMAL(12,2)",
+          "description": "当期确认收入"
+        },
+        {
+          "field_name": "plan_id",
+          "field_cn_name": "套餐ID",
+          "data_type": "INT",
+          "description": "套餐ID"
+        }
+      ]
+    },
+    {
+      "table_name": "dws_mrr_daily",
+      "table_cn_name": "MRR日汇总表",
+      "description": "MRR日汇总表，按日期汇总新增MRR、流失MRR、扩展MRR、总MRR。用于SaaS收入监控和预测。",
+      "datasource": "doris",
+      "layer": "DWS",
+      "keywords": [
+        "MRR",
+        "日汇总",
+        "经常性收入",
+        "SaaS收入",
+        "mrr daily"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "field_cn_name": "统计日期",
+          "data_type": "DATE",
+          "description": "统计日期"
+        },
+        {
+          "field_name": "new_mrr",
+          "field_cn_name": "新增MRR",
+          "data_type": "DECIMAL(18,2)",
+          "description": "当日新增MRR"
+        },
+        {
+          "field_name": "churn_mrr",
+          "field_cn_name": "流失MRR",
+          "data_type": "DECIMAL(18,2)",
+          "description": "当日流失MRR"
+        },
+        {
+          "field_name": "expansion_mrr",
+          "field_cn_name": "扩展MRR",
+          "data_type": "DECIMAL(18,2)",
+          "description": "升级带来的MRR增量"
+        },
+        {
+          "field_name": "contraction_mrr",
+          "field_cn_name": "收缩MRR",
+          "data_type": "DECIMAL(18,2)",
+          "description": "降级带来的MRR减量"
+        },
+        {
+          "field_name": "total_mrr",
+          "field_cn_name": "总MRR",
+          "data_type": "DECIMAL(18,2)",
+          "description": "当日总MRR"
+        }
+      ]
+    },
+    {
+      "table_name": "dws_churn_monthly",
+      "table_cn_name": "流失月汇总表",
+      "description": "流失月汇总表，按月份汇总客户流失数、流失率、流失MRR、流失原因分布等。用于客户成功团队监控流失。",
+      "datasource": "doris",
+      "layer": "DWS",
+      "keywords": [
+        "流失",
+        "月汇总",
+        "churn",
+        "客户流失",
+        "churn monthly"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_month",
+          "field_cn_name": "统计月份",
+          "data_type": "INT",
+          "description": "统计月份YYYYMM"
+        },
+        {
+          "field_name": "plan_id",
+          "field_cn_name": "套餐ID",
+          "data_type": "INT",
+          "description": "套餐ID"
+        },
+        {
+          "field_name": "churned_customers",
+          "field_cn_name": "流失客户数",
+          "data_type": "INT",
+          "description": "当月流失客户数"
+        },
+        {
+          "field_name": "churn_rate",
+          "field_cn_name": "流失率",
+          "data_type": "DECIMAL(5,4)",
+          "description": "流失率"
+        },
+        {
+          "field_name": "churn_mrr",
+          "field_cn_name": "流失MRR",
+          "data_type": "DECIMAL(18,2)",
+          "description": "流失MRR金额"
+        },
+        {
+          "field_name": "avg_tenure_days",
+          "field_cn_name": "平均 tenure",
+          "data_type": "INT",
+          "description": "流失前平均使用天数"
+        }
+      ]
+    },
+    {
+      "table_name": "dws_user_activity_daily",
+      "table_cn_name": "用户活动日汇总表",
+      "description": "用户活动日汇总表，按日期汇总DAU、WAU、功能使用次数、平均使用时长等。用于产品运营和增长分析。",
+      "datasource": "doris",
+      "layer": "DWS",
+      "keywords": [
+        "DAU",
+        "用户活动",
+        "日汇总",
+        "产品运营",
+        "user activity"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "field_cn_name": "统计日期",
+          "data_type": "DATE",
+          "description": "统计日期"
+        },
+        {
+          "field_name": "dau",
+          "field_cn_name": "日活跃用户",
+          "data_type": "BIGINT",
+          "description": "当日活跃用户数"
+        },
+        {
+          "field_name": "feature_use_count",
+          "field_cn_name": "功能使用次数",
+          "data_type": "BIGINT",
+          "description": "核心功能使用次数"
+        },
+        {
+          "field_name": "avg_session_minutes",
+          "field_cn_name": "平均会话时长",
+          "data_type": "DECIMAL(6,2)",
+          "description": "平均使用时长（分钟）"
+        },
+        {
+          "field_name": "new_user_count",
+          "field_cn_name": "新增用户",
+          "data_type": "BIGINT",
+          "description": "当日新增注册用户数"
+        },
+        {
+          "field_name": "returning_user_count",
+          "field_cn_name": "回访用户",
+          "data_type": "BIGINT",
+          "description": "回访用户数"
+        }
+      ]
+    },
+    {
+      "table_name": "ads_mrr_kpi",
+      "table_cn_name": "MRR KPI指标表",
+      "description": "应用层MRR核心指标表，面向SaaS管理层。包含MRR、ARR、NRR、增长率等核心SaaS指标。",
+      "datasource": "doris",
+      "layer": "ADS",
+      "keywords": [
+        "MRR",
+        "ARR",
+        "NRR",
+        "SaaS指标",
+        "mrr kpi"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "field_cn_name": "统计日期",
+          "data_type": "DATE",
+          "description": "统计日期"
+        },
+        {
+          "field_name": "kpi_name",
+          "field_cn_name": "指标名称",
+          "data_type": "VARCHAR(50)",
+          "description": "指标名：MRR/ARR/NRR/ChurnRate"
+        },
+        {
+          "field_name": "kpi_value",
+          "field_cn_name": "指标值",
+          "data_type": "DECIMAL(18,2)",
+          "description": "指标数值"
+        },
+        {
+          "field_name": "mom_growth",
+          "field_cn_name": "环比",
+          "data_type": "DECIMAL(5,2)",
+          "description": "环比增长率"
+        },
+        {
+          "field_name": "unit",
+          "field_cn_name": "单位",
+          "data_type": "VARCHAR(20)",
+          "description": "单位：元/%"
+        }
+      ]
+    },
+    {
+      "table_name": "ads_ltv_cohort",
+      "table_cn_name": "LTV Cohort分析表",
+      "description": "应用层LTV Cohort分析表，按获客月份和留存月份统计客户生命周期价值。用于评估获客质量和长期价值。",
+      "datasource": "doris",
+      "layer": "ADS",
+      "keywords": [
+        "LTV",
+        "Cohort",
+        "生命周期价值",
+        "获客质量",
+        "ltv cohort"
+      ],
+      "fields": [
+        {
+          "field_name": "cohort_month",
+          "field_cn_name": "获客月份",
+          "data_type": "INT",
+          "description": "客户首次订阅月份YYYYMM"
+        },
+        {
+          "field_name": "period_month",
+          "field_cn_name": "留存月份",
+          "data_type": "INT",
+          "description": "第N个月YYYYMM"
+        },
+        {
+          "field_name": "customer_count",
+          "field_cn_name": "客户数",
+          "data_type": "INT",
+          "description": "该cohort剩余客户数"
+        },
+        {
+          "field_name": "revenue",
+          "field_cn_name": "收入",
+          "data_type": "DECIMAL(18,2)",
+          "description": "该月cohort贡献收入"
+        },
+        {
+          "field_name": "ltv",
+          "field_cn_name": "LTV",
+          "data_type": "DECIMAL(12,2)",
+          "description": "累计LTV"
+        },
+        {
+          "field_name": "retention_rate",
+          "field_cn_name": "留存率",
+          "data_type": "DECIMAL(5,4)",
+          "description": "该月留存率"
+        }
+      ]
+    },
+    {
+      "table_name": "ads_nps_score",
+      "table_cn_name": "NPS评分表",
+      "description": "应用层NPS评分表，按月份汇总NPS调研的推荐者、被动者、贬损者分布及NPS得分。用于客户满意度监控。",
+      "datasource": "doris",
+      "layer": "ADS",
+      "keywords": [
+        "NPS",
+        "客户满意度",
+        "推荐者",
+        "nps score"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_month",
+          "field_cn_name": "统计月份",
+          "data_type": "INT",
+          "description": "统计月份YYYYMM"
+        },
+        {
+          "field_name": "promoters",
+          "field_cn_name": "推荐者",
+          "data_type": "INT",
+          "description": "9-10分人数"
+        },
+        {
+          "field_name": "passives",
+          "field_cn_name": "被动者",
+          "data_type": "INT",
+          "description": "7-8分人数"
+        },
+        {
+          "field_name": "detractors",
+          "field_cn_name": "贬损者",
+          "data_type": "INT",
+          "description": "0-6分人数"
+        },
+        {
+          "field_name": "nps_score",
+          "field_cn_name": "NPS得分",
+          "data_type": "DECIMAL(5,2)",
+          "description": "NPS = (推荐者-贬损者)/总样本 * 100"
+        },
+        {
+          "field_name": "response_count",
+          "field_cn_name": "样本数",
+          "data_type": "INT",
+          "description": "总样本数"
+        }
+      ]
+    },
+    {
+      "table_name": "ads_saas_user_segment",
+      "table_cn_name": "SaaS用户分群表",
+      "description": "应用层SaaS用户分群表，按客户规模和活跃度分群。用于客户成功团队的差异化运营策略制定。",
+      "datasource": "doris",
+      "layer": "ADS",
+      "keywords": [
+        "SaaS用户",
+        "客户分群",
+        "用户画像",
+        "saas user segment"
+      ],
+      "fields": [
+        {
+          "field_name": "stat_date",
+          "field_cn_name": "统计日期",
+          "data_type": "DATE",
+          "description": "统计日期"
+        },
+        {
+          "field_name": "segment_name",
+          "field_cn_name": "分群名称",
+          "data_type": "VARCHAR(50)",
+          "description": "分群名称：VIP/高活跃/低活跃/流失风险"
+        },
+        {
+          "field_name": "customer_count",
+          "field_cn_name": "客户数",
+          "data_type": "INT",
+          "description": "该分群客户数"
+        },
+        {
+          "field_name": "mrr_contribution",
+          "field_cn_name": "MRR贡献",
+          "data_type": "DECIMAL(18,2)",
+          "description": "该分群MRR贡献"
+        },
+        {
+          "field_name": "avg_health_score",
+          "field_cn_name": "平均健康分",
+          "data_type": "DECIMAL(5,2)",
+          "description": "平均健康分数0-100"
+        }
+      ]
+    }
+  ]
+}

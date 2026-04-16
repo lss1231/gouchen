@@ -27,7 +27,7 @@ def test_qdrant_connection():
 def test_embedding_service():
     """Check if embedding service can build index and search."""
     print("\n=== Embedding Service Test ===")
-    schema_path = Path("data/schema/doris_schema_enhanced.json")
+    schema_path = Path("workspace/dbgen/schema.json")
     if not schema_path.exists():
         print(f"  Schema file not found: {schema_path}")
         return False
@@ -57,13 +57,11 @@ def test_embedding_service():
 def test_schema_store_retrieval_path():
     """Check which path SchemaStore actually uses."""
     print("\n=== SchemaStore Retrieval Path Test ===")
-    # schema_path = Path("data/schema/doris_schema_enhanced.json")
-    # tables = load_tables_from_json(schema_path)
-    #
+    schema_path = Path("workspace/dbgen/schema.json")
+    tables = load_tables_from_json(schema_path)
+
     store = get_schema_store()
-    # store.index_tables(tables)
-    #
-    # print(f"  use_vector_search flag = {store._use_vector_search}")
+    store.index_tables(tables)
 
     query = "上个月各省份销售额"
     try:
@@ -73,17 +71,14 @@ def test_schema_store_retrieval_path():
             print(f"    - {r.table_name} ({r.table_cn_name})")
 
         # Determine which path was actually used by inspecting embedding service state
-        if store._use_vector_search:
-            try:
-                service = store._get_embedding_service()
-                if service.is_indexed():
-                    print("  -> Retrieval path: VECTOR SEARCH (Qdrant)")
-                else:
-                    print("  -> Retrieval path: KEYWORD MATCH (vector index not ready)")
-            except Exception as e:
-                print(f"  -> Retrieval path: KEYWORD MATCH (embedding service error: {e})")
-        else:
-            print("  -> Retrieval path: KEYWORD MATCH (vector search disabled)")
+        try:
+            service = store._get_embedding_service()
+            if service.is_indexed():
+                print("  -> Retrieval path: VECTOR SEARCH (Qdrant)")
+            else:
+                print("  -> Retrieval path: KEYWORD MATCH (vector index not ready)")
+        except Exception as e:
+            print(f"  -> Retrieval path: KEYWORD MATCH (embedding service error: {e})")
 
         return True
     except Exception as e:

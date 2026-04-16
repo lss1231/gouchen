@@ -1,0 +1,19 @@
+{
+  "category": "join",
+  "tags": ["region", "user", "order", "join"],
+  "query": "每个省份的下单用户数和订单数",
+  "intent": {
+    "metrics": ["下单用户数", "订单数"],
+    "resolved_metrics": ["order_user_count", "order_count"],
+    "dimensions": ["province_name"],
+    "filters": [],
+    "time_range": {"type": "last_30_days", "days": 30},
+    "aggregation": "sum",
+    "limit": 1000,
+    "analysis_type": "single",
+    "compare_periods": []
+  },
+  "schema_tables": ["dwd_order_detail", "dim_region"],
+  "sql": "SELECT dr.region_name AS province_name, COUNT(DISTINCT dod.user_id) AS order_user_count, COUNT(DISTINCT dod.order_id) AS order_count FROM dwd_order_detail dod JOIN dim_region dr ON dod.province_id = dr.region_id WHERE dod.order_date >= DATE_SUB(CURRENT_DATE, 30) GROUP BY dr.region_name ORDER BY order_count DESC",
+  "explanation": "通过订单明细关联地区维度表，按省份统计下单用户数和订单数"
+}

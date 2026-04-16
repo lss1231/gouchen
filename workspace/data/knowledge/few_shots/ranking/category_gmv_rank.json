@@ -1,0 +1,19 @@
+{
+  "category": "ranking",
+  "tags": ["category", "rank", "gmv", "top"],
+  "query": "上个月销售额最高的前5个类目",
+  "intent": {
+    "metrics": ["GMV排名"],
+    "resolved_metrics": ["gmv_rank"],
+    "dimensions": ["category_name"],
+    "filters": [],
+    "time_range": {"type": "last_month"},
+    "aggregation": "sum",
+    "limit": 5,
+    "analysis_type": "single",
+    "compare_periods": []
+  },
+  "schema_tables": ["ads_category_rank"],
+  "sql": "SELECT category_name, gmv, gmv_rank, gmv_share FROM ads_category_rank WHERE stat_date >= DATE_TRUNC('MONTH', DATE_SUB(CURRENT_DATE, 1)) AND stat_date < DATE_TRUNC('MONTH', CURRENT_DATE) ORDER BY gmv_rank LIMIT 5",
+  "explanation": "从类目销售排行表查询上月GMV最高的前5个类目，包含排名和市场份额"
+}

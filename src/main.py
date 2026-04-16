@@ -13,7 +13,7 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
     # Startup: Initialize schema store (Doris only)
     print("Initializing schema store...")
-    schema_path = Path("data/schema/doris_schema_enhanced.json")
+    schema_path = Path("workspace/dbgen/schema.json")
     if schema_path.exists():
         tables = load_tables_from_json(schema_path)
         # Filter only doris tables

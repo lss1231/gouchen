@@ -19,8 +19,8 @@ services:
       - DORIS_USER=${DORIS_USER}
       - DORIS_PASSWORD=${DORIS_PASSWORD}
       - DORIS_DATABASE=${DORIS_DATABASE}
-      - VECTOR_STORE_PATH=/app/data/vector_store
+      - VECTOR_STORE_PATH=/app/workspace/data/vector_store
     volumes:
-      - ./data:/app/data
+      - ./workspace:/app/workspace
     extra_hosts:
       - "host.docker.internal:host-gateway"

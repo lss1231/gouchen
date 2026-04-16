@@ -1,0 +1,19 @@
+{
+  "category": "join",
+  "tags": ["category", "gmv", "join", "sales"],
+  "query": "各商品类目的销售额和订单数",
+  "intent": {
+    "metrics": ["销售额", "订单数"],
+    "resolved_metrics": ["gmv", "order_count"],
+    "dimensions": ["category_name"],
+    "filters": [],
+    "time_range": {"type": "last_30_days", "days": 30},
+    "aggregation": "sum",
+    "limit": 1000,
+    "analysis_type": "single",
+    "compare_periods": []
+  },
+  "schema_tables": ["dwd_order_detail", "dim_product"],
+  "sql": "SELECT dp.category_name, SUM(dod.pay_amount) AS actual_amount, COUNT(DISTINCT dod.order_id) AS order_count FROM dwd_order_detail dod JOIN dim_product dp ON dod.product_id = dp.product_id WHERE dod.order_date >= DATE_SUB(CURRENT_DATE, 30) GROUP BY dp.category_name ORDER BY actual_amount DESC",
+  "explanation": "通过订单明细关联商品维度表，按类目名称汇总销售额和订单数"
+}

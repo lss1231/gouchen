@@ -1,0 +1,19 @@
+{
+  "category": "ranking",
+  "tags": ["region", "rank", "gmv", "top"],
+  "query": "上个月各省份GMV排名",
+  "intent": {
+    "metrics": ["GMV排名"],
+    "resolved_metrics": ["gmv_rank"],
+    "dimensions": ["province_name"],
+    "filters": [],
+    "time_range": {"type": "last_month"},
+    "aggregation": "sum",
+    "limit": 1000,
+    "analysis_type": "single",
+    "compare_periods": []
+  },
+  "schema_tables": ["ads_region_rank"],
+  "sql": "SELECT province_name, gmv, gmv_rank, gmv_share FROM ads_region_rank WHERE stat_date >= DATE_TRUNC('MONTH', DATE_SUB(CURRENT_DATE, 1)) AND stat_date < DATE_TRUNC('MONTH', CURRENT_DATE) ORDER BY gmv_rank LIMIT 100",
+  "explanation": "从地区销售排行表查询上月的省份GMV、排名及市场份额占比"
+}

@@ -1,0 +1,19 @@
+{
+  "category": "retention",
+  "tags": ["retention", "d7", "user", "cohort"],
+  "query": "最近一周的7日留存率",
+  "intent": {
+    "metrics": ["7日留存率"],
+    "resolved_metrics": ["retention_rate"],
+    "dimensions": ["register_date"],
+    "filters": [],
+    "time_range": {"type": "last_7_days", "days": 7},
+    "aggregation": "sum",
+    "limit": 1000,
+    "analysis_type": "single",
+    "compare_periods": []
+  },
+  "schema_tables": ["ads_user_retention"],
+  "sql": "SELECT register_date, new_user_count, retained_user_count, retention_rate FROM ads_user_retention WHERE retention_day = 7 AND stat_date >= DATE_SUB(CURRENT_DATE, 7) ORDER BY register_date DESC",
+  "explanation": "从用户留存分析表查询最近一周各注册日期的7日留存率（retention_day=7）"
+}

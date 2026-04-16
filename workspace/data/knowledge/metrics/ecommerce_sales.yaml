@@ -1,0 +1,211 @@
+domain: "ecommerce_sales"
+version: "1.0"
+metrics:
+  - name: "gmv"
+    display_name: "商品交易总额"
+    aliases: ["销售额", "GMV", "交易总额", "销售总额", "成交金额", "营收", "收入"]
+    formula: "SUM(gmv)"
+    applicable_tables: ["dwd_order_detail", "dws_sales_daily", "dws_sales_monthly", "ads_sales_kpi", "ads_region_rank", "ads_category_rank"]
+    granularity: ["day", "month", "province", "category", "brand"]
+    description: "商品交易总额，订单金额合计，未扣除优惠。在DWS层可直接取gmv字段汇总，在DWD层可通过 SUM(unit_price * quantity) 计算。"
+    unit: "元"
+    data_type: "decimal"
+    keywords: ["gmv", "销售额", "交易", "营收", "收入", "sale"]
+
+  - name: "actual_amount"
+    display_name: "实付金额"
+    aliases: ["实付金额", "实际支付", "用户实付", "到手金额", "净收入"]
+    formula: "SUM(actual_amount) 或 SUM(pay_amount)"
+    applicable_tables: ["dwd_order_detail", "dws_sales_daily", "dws_sales_monthly", "ads_sales_kpi"]
+    granularity: ["day", "month", "province", "category"]
+    description: "用户实际支付金额，已扣除优惠。DWD层对应 pay_amount 字段。"
+    unit: "元"
+    data_type: "decimal"
+    keywords: ["实付", "实际支付", "净收入", "actual"]
+
+  - name: "profit_amount"
+    display_name: "毛利金额"
+    aliases: ["毛利", "毛利润", "利润", "profit", "盈利"]
+    formula: "SUM(profit_amount) 或 SUM(profit)"
+    applicable_tables: ["dwd_order_detail", "dws_sales_daily", "dws_sales_monthly", "ads_sales_kpi"]
+    granularity: ["day", "month", "province", "category"]
+    description: "毛利金额 = 实付金额 - 成本金额。在DWD层可用 profit 字段。"
+    unit: "元"
+    data_type: "decimal"
+    keywords: ["毛利", "利润", "profit", "盈利"]
+
+  - name: "order_count"
+    display_name: "订单数"
+    aliases: ["订单数", "订单量", "单量", "订单数量", "交易笔数"]
+    formula: "COUNT(DISTINCT order_id)"
+    applicable_tables: ["dwd_order_detail", "dws_sales_daily", "dws_sales_monthly", "ads_sales_kpi", "ads_region_rank", "ads_category_rank"]
+    granularity: ["day", "month", "province", "category"]
+    description: "订单数量，去重 order_id。DWS层可直接取 order_count。"
+    unit: "单"
+    data_type: "bigint"
+    keywords: ["订单数", "单量", "订单", "order count"]
+
+  - name: "order_user_count"
+    display_name: "下单用户数"
+    aliases: ["下单用户数", "购买用户数", "付费用户数", "买家数", "用户数", "用户数量"]
+    formula: "COUNT(DISTINCT user_id)"
+    applicable_tables: ["dwd_order_detail", "dws_sales_daily", "dws_sales_monthly", "ads_region_rank", "ads_category_rank"]
+    granularity: ["day", "month", "province", "category"]
+    description: "有下单行为的去重用户数。DWS层对应 order_user_count。"
+    unit: "人"
+    data_type: "bigint"
+    keywords: ["下单用户", "购买用户", "付费用户", "买家", "用户"]
+
+  - name: "product_count"
+    display_name: "商品种数"
+    aliases: ["商品种数", "SKU数", "商品数量", "销售SKU"]
+    formula: "COUNT(DISTINCT product_id)"
+    applicable_tables: ["dwd_order_detail", "dws_sales_daily", "dws_sales_monthly", "ads_category_rank"]
+    granularity: ["day", "month", "category"]
+    description: "销售的商品SKU种类数。DWS层对应 product_count。"
+    unit: "个"
+    data_type: "bigint"
+    keywords: ["商品种数", "SKU", "商品数", "product"]
+
+  - name: "discount_amount"
+    display_name: "优惠金额"
+    aliases: ["优惠金额", "折扣金额", "优惠额", "让利金额"]
+    formula: "SUM(discount_amount)"
+    applicable_tables: ["dwd_order_detail", "dws_sales_daily", "dws_sales_monthly"]
+    granularity: ["day", "month", "province", "category"]
+    description: "当日/当月优惠总金额。"
+    unit: "元"
+    data_type: "decimal"
+    keywords: ["优惠", "折扣", "discount", "让利"]
+
+  - name: "cost_amount"
+    display_name: "成本金额"
+    aliases: ["成本金额", "销售成本", "商品成本", "总成本"]
+    formula: "SUM(cost_amount) 或 SUM(unit_cost * quantity)"
+    applicable_tables: ["dwd_order_detail", "dws_sales_daily", "dws_sales_monthly"]
+    granularity: ["day", "month", "province", "category"]
+    description: "销售商品的成本合计。DWD层可用 unit_cost * quantity 计算。"
+    unit: "元"
+    data_type: "decimal"
+    keywords: ["成本", "商品成本", "销售成本", "cost"]
+
+  - name: "retention_rate"
+    display_name: "留存率"
+    aliases: ["留存率", "次日留存", "3日留存", "7日留存", "30日留存", "用户留存", "留存"]
+    formula: "retained_user_count / new_user_count"
+    applicable_tables: ["ads_user_retention"]
+    granularity: ["day", "retention_day"]
+    description: "指定天数后仍活跃的用户占新增用户的比例。该指标已预计算在 ads_user_retention 表中，禁止用窗口函数自行计算。"
+    unit: "%"
+    data_type: "decimal"
+    keywords: ["留存", "retention", "cohort", "次日留存", "7日留存"]
+
+  - name: "new_users"
+    display_name: "新增用户"
+    aliases: ["新增用户", "新注册用户", "新增注册", "新用户"]
+    formula: "SUM(new_users)"
+    applicable_tables: ["dws_user_stats"]
+    granularity: ["day"]
+    description: "当日新注册的用户数。"
+    unit: "人"
+    data_type: "bigint"
+    keywords: ["新增用户", "新注册", "new users"]
+
+  - name: "active_users"
+    display_name: "活跃用户"
+    aliases: ["活跃用户", "日活", "DAU", "活跃用户数", "日活跃用户"]
+    formula: "SUM(active_users)"
+    applicable_tables: ["dws_user_stats"]
+    granularity: ["day"]
+    description: "当日活跃用户数，即DAU。"
+    unit: "人"
+    data_type: "bigint"
+    keywords: ["活跃用户", "日活", "DAU", "active"]
+
+  - name: "paying_users"
+    display_name: "付费用户数"
+    aliases: ["付费用户", "付费人数", "有支付用户", "交易用户"]
+    formula: "SUM(paying_users)"
+    applicable_tables: ["dws_user_stats"]
+    granularity: ["day"]
+    description: "当日有支付行为的去重用户数。"
+    unit: "人"
+    data_type: "bigint"
+    keywords: ["付费用户", "交易用户", "paying users"]
+
+  - name: "gmv_per_user"
+    display_name: "人均GMV"
+    aliases: ["人均GMV", "客单价", "人均消费", "ARPU", "人均贡献"]
+    formula: "SUM(gmv) / COUNT(DISTINCT user_id) 或 gmv_per_user"
+    applicable_tables: ["dws_user_stats"]
+    granularity: ["day"]
+    description: "人均GMV = GMV / 付费用户数。DWS层可直接取 gmv_per_user。"
+    unit: "元"
+    data_type: "decimal"
+    keywords: ["人均GMV", "客单价", "人均消费", "ARPU"]
+
+  - name: "orders_per_user"
+    display_name: "人均订单数"
+    aliases: ["人均订单数", "人均单量", "订单频次"]
+    formula: "orders_per_user"
+    applicable_tables: ["dws_user_stats"]
+    granularity: ["day"]
+    description: "人均订单数 = 当日订单数 / 付费用户数。"
+    unit: "单"
+    data_type: "decimal"
+    keywords: ["人均订单", "订单频次", "orders per user"]
+
+  - name: "total_users"
+    display_name: "累计用户"
+    aliases: ["累计用户", "总用户数", "注册用户总数", "累计注册"]
+    formula: "SUM(total_users) 或 MAX(total_users)"
+    applicable_tables: ["dws_user_stats"]
+    granularity: ["day"]
+    description: "截至当日的累计注册用户数。"
+    unit: "人"
+    data_type: "bigint"
+    keywords: ["累计用户", "总用户", "注册用户", "total users"]
+
+  - name: "gmv_rank"
+    display_name: "GMV排名"
+    aliases: ["GMV排名", "销售排名", "地区排名", "类目排名"]
+    formula: "gmv_rank"
+    applicable_tables: ["ads_region_rank", "ads_category_rank"]
+    granularity: ["month", "province", "category"]
+    description: "按GMV计算的排名，1表示第一名。仅在 ads_region_rank 和 ads_category_rank 中可用。"
+    unit: "名"
+    data_type: "int"
+    keywords: ["排名", "GMV排名", "销售排名", "rank"]
+
+  - name: "gmv_share"
+    display_name: "GMV占比"
+    aliases: ["GMV占比", "市场份额", "销售占比", "占比", "份额"]
+    formula: "gmv_share"
+    applicable_tables: ["ads_region_rank", "ads_category_rank"]
+    granularity: ["month", "province", "category"]
+    description: "该地区/类目GMV占全站的比例。仅在 ads_region_rank 和 ads_category_rank 中可用。"
+    unit: "%"
+    data_type: "decimal"
+    keywords: ["占比", "份额", "市场份额", "share"]
+
+  - name: "mom_growth"
+    display_name: "环比增长率"
+    aliases: ["环比", "环比增长率", "环比变化", "环比增长"]
+    formula: "(本期值 - 上期值) / 上期值 * 100"
+    applicable_tables: ["ads_sales_kpi"]
+    granularity: ["day", "month"]
+    description: "与上一周期对比的变化率。ads_sales_kpi 表中已预计算。"
+    unit: "%"
+    data_type: "decimal"
+    keywords: ["环比", "mom", "环比增长"]
+
+  - name: "yoy_growth"
+    display_name: "同比增长率"
+    aliases: ["同比", "同比增长率", "同比变化", "同比增长"]
+    formula: "(本期值 - 去年同期值) / 去年同期值 * 100"
+    applicable_tables: ["ads_sales_kpi"]
+    granularity: ["day", "month"]
+    description: "与去年同期对比的变化率。ads_sales_kpi 表中已预计算。"
+    unit: "%"
+    data_type: "decimal"
+    keywords: ["同比", "yoy", "同比增长"]

@@ -1,0 +1,19 @@
+{
+  "category": "single_table",
+  "tags": ["user", "list", "single"],
+  "query": "最近注册的前100名用户",
+  "intent": {
+    "metrics": [],
+    "resolved_metrics": [],
+    "dimensions": ["user_id", "username", "register_time"],
+    "filters": [],
+    "time_range": {"type": "all_time"},
+    "aggregation": "sum",
+    "limit": 100,
+    "analysis_type": "single",
+    "compare_periods": []
+  },
+  "schema_tables": ["ods_users"],
+  "sql": "SELECT user_id, username, email, phone, register_time FROM ods_users ORDER BY register_time DESC LIMIT 100",
+  "explanation": "从ODS用户源数据表按注册时间倒序查询最近注册的100名用户"
+}

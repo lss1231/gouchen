@@ -1,0 +1,101 @@
+domain: "saas_subscription"
+version: "1.0"
+metrics:
+  - name: "mrr"
+    display_name: "月度经常性收入"
+    aliases: ["MRR", "月度经常性收入", "月经常性收入", "月营收"]
+    formula: "SUM(mrr)"
+    applicable_tables: ["ads_mrr_kpi", "dws_mrr_daily"]
+    granularity: ["day", "month", "plan"]
+    description: "Monthly Recurring Revenue，月度订阅经常性收入。"
+    unit: "元"
+    data_type: "decimal"
+    keywords: ["MRR", "月度经常性收入", "经常性收入", "recurring revenue"]
+
+  - name: "arr"
+    display_name: "年度经常性收入"
+    aliases: ["ARR", "年度经常性收入", "年经常性收入"]
+    formula: "MRR * 12"
+    applicable_tables: ["ads_mrr_kpi"]
+    granularity: ["month", "plan"]
+    description: "Annual Recurring Revenue，年度订阅经常性收入。"
+    unit: "元"
+    data_type: "decimal"
+    keywords: ["ARR", "年度经常性收入", "annual recurring revenue"]
+
+  - name: "churn_rate"
+    display_name: "流失率"
+    aliases: ["流失率", "用户流失率", "客户流失率", "churn"]
+    formula: "流失用户数 / 期初用户数"
+    applicable_tables: ["dws_churn_monthly", "ads_mrr_kpi"]
+    granularity: ["month"]
+    description: "特定周期内流失的用户占总用户的比例。"
+    unit: "%"
+    data_type: "decimal"
+    keywords: ["流失率", "churn", "用户流失", "客户流失"]
+
+  - name: "ltv"
+    display_name: "用户生命周期价值"
+    aliases: ["LTV", "生命周期价值", "用户终身价值", "客户价值"]
+    formula: "ltv"
+    applicable_tables: ["ads_ltv_cohort"]
+    granularity: ["cohort", "plan", "channel"]
+    description: "LifeTime Value，用户生命周期价值。已预计算在 ads_ltv_cohort 表中。"
+    unit: "元"
+    data_type: "decimal"
+    keywords: ["LTV", "生命周期价值", "lifetime value"]
+
+  - name: "nps"
+    display_name: "净推荐值"
+    aliases: ["NPS", "净推荐值", "推荐值", "用户满意度"]
+    formula: "nps_score"
+    applicable_tables: ["ads_nps_score"]
+    granularity: ["month"]
+    description: "Net Promoter Score，净推荐值。"
+    unit: "分"
+    data_type: "decimal"
+    keywords: ["NPS", "净推荐值", "net promoter score", "满意度"]
+
+  - name: "dau"
+    display_name: "日活跃用户"
+    aliases: ["DAU", "日活", "日活跃用户", "日活跃"]
+    formula: "SUM(active_users) 或 SUM(dau)"
+    applicable_tables: ["dws_user_activity_daily"]
+    granularity: ["day"]
+    description: "Daily Active Users，日活跃用户数。"
+    unit: "人"
+    data_type: "bigint"
+    keywords: ["DAU", "日活", "日活跃用户", "daily active users"]
+
+  - name: "mau"
+    display_name: "月活跃用户"
+    aliases: ["MAU", "月活", "月活跃用户", "月活跃"]
+    formula: "SUM(mau)"
+    applicable_tables: ["dws_user_activity_daily"]
+    granularity: ["month"]
+    description: "Monthly Active Users，月活跃用户数。"
+    unit: "人"
+    data_type: "bigint"
+    keywords: ["MAU", "月活", "月活跃用户", "monthly active users"]
+
+  - name: "subscription_count"
+    display_name: "订阅数"
+    aliases: ["订阅数", "订阅量", "订阅用户数", "付费订阅数"]
+    formula: "COUNT(DISTINCT subscription_id)"
+    applicable_tables: ["ods_subscriptions", "dwd_subscription_events"]
+    granularity: ["day", "month", "plan"]
+    description: "订阅订单/合同的数量。"
+    unit: "个"
+    data_type: "bigint"
+    keywords: ["订阅", "subscription", "付费订阅"]
+
+  - name: "renewal_rate"
+    display_name: "续费率"
+    aliases: ["续费率", "续约率", "续订率", "renewal"]
+    formula: "续费用户数 / 到期用户数"
+    applicable_tables: ["dwd_subscription_events"]
+    granularity: ["month"]
+    description: "到期用户中成功续费的比例。"
+    unit: "%"
+    data_type: "decimal"
+    keywords: ["续费率", "renewal", "续约", "续订"]

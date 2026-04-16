@@ -1,0 +1,57 @@
+domain: "supply_chain"
+version: "1.0"
+metrics:
+  - name: "inventory_quantity"
+    display_name: "库存数量"
+    aliases: ["库存量", "库存数", "现有库存", "库存数量", "存货"]
+    formula: "SUM(quantity)"
+    applicable_tables: ["ods_inventory", "dws_inventory_daily", "ads_stock_alert"]
+    granularity: ["day", "warehouse", "product"]
+    description: "商品在仓库中的可用库存数量。"
+    unit: "件"
+    data_type: "bigint"
+    keywords: ["库存", "inventory", "存货", "库存量"]
+
+  - name: "inventory_turnover"
+    display_name: "库存周转率"
+    aliases: ["库存周转", "周转率", "存货周转率"]
+    formula: "销售成本 / 平均库存成本"
+    applicable_tables: ["ads_inventory_turnover"]
+    granularity: ["month", "warehouse", "category"]
+    description: "衡量库存周转速度的指标，已预计算在 ads_inventory_turnover 表中。"
+    unit: "次"
+    data_type: "decimal"
+    keywords: ["库存周转", "周转率", "turnover"]
+
+  - name: "stock_alert_count"
+    display_name: "缺货商品数"
+    aliases: ["缺货数", "缺货商品", "库存预警", "低库存商品"]
+    formula: "COUNT(DISTINCT product_id)"
+    applicable_tables: ["ads_stock_alert"]
+    granularity: ["day", "warehouse"]
+    description: "低于安全库存阈值的商品数量。"
+    unit: "个"
+    data_type: "bigint"
+    keywords: ["缺货", "库存预警", "低库存", "stock alert"]
+
+  - name: "purchase_amount"
+    display_name: "采购金额"
+    aliases: ["采购额", "采购金额", "进货金额", "采购总额"]
+    formula: "SUM(purchase_amount) 或 SUM(quantity * unit_price)"
+    applicable_tables: ["dwd_purchase_detail", "dws_purchase_monthly"]
+    granularity: ["month", "supplier", "warehouse"]
+    description: "采购商品的总金额。"
+    unit: "元"
+    data_type: "decimal"
+    keywords: ["采购", "进货", "purchase", "采购金额"]
+
+  - name: "warehouse_count"
+    display_name: "仓库数量"
+    aliases: ["仓库数", "仓库数量", "仓储数量"]
+    formula: "COUNT(DISTINCT warehouse_id)"
+    applicable_tables: ["dim_warehouse", "ods_warehouses"]
+    granularity: ["province", "city"]
+    description: "仓库的数量。"
+    unit: "个"
+    data_type: "int"
+    keywords: ["仓库", "仓储", "warehouse"]

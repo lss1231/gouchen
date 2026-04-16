@@ -14,7 +14,8 @@ DatasourceTypeLiteral = Literal["doris"]
 
 class QueryIntent(BaseModel):
     """解析后的查询意图"""
-    metrics: List[str] = Field(default=[], description="指标字段")
+    metrics: List[str] = Field(default=[], description="指标字段（原始口语化表达）")
+    resolved_metrics: List[str] = Field(default=[], description="解析后的标准指标名称")
     dimensions: List[str] = Field(default=[], description="维度字段")
     filters: List[Dict[str, Any]] = Field(default=[], description="过滤条件")
     time_range: Optional[Dict[str, Any]] = Field(default=None, description="时间范围")
@@ -42,6 +43,20 @@ class GeneratedSQL(BaseModel):
     datasource: DatasourceType = DatasourceType.DORIS
     tables: List[str]
     explanation: str
+
+
+class MetricDefinition(BaseModel):
+    """指标定义"""
+    name: str = Field(description="指标英文名/标准标识符")
+    display_name: str = Field(description="指标中文显示名")
+    aliases: List[str] = Field(default_factory=list, description="指标别名列表，用于口语化匹配")
+    formula: str = Field(default="", description="指标计算公式或聚合方式")
+    applicable_tables: List[str] = Field(default_factory=list, description="该指标适用的表列表")
+    granularity: List[str] = Field(default_factory=list, description="指标支持的粒度，如 day, month, province")
+    description: str = Field(default="", description="指标业务口径说明")
+    unit: str = Field(default="", description="指标单位，如 元, %, 人")
+    data_type: str = Field(default="decimal", description="指标数据类型")
+    keywords: List[str] = Field(default_factory=list, description="用于召回匹配的关键词")
 
 
 class QueryResult(BaseModel):

@@ -18,6 +18,7 @@ class QueryIntent(TypedDict):
     """Query intent extracted from natural language query."""
 
     metrics: List[str]
+    resolved_metrics: List[str]
     dimensions: List[str]
     filters: List[Dict[str, Any]]
     time_range: Optional[Dict[str, Any]]

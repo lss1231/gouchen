@@ -1,0 +1,19 @@
+{
+  "category": "aggregation",
+  "tags": ["gmv", "mom", "growth", "环比"],
+  "query": "本月销售额环比增长率",
+  "intent": {
+    "metrics": ["销售额", "环比增长率"],
+    "resolved_metrics": ["gmv", "mom_growth"],
+    "dimensions": [],
+    "filters": [],
+    "time_range": {"type": "current_month"},
+    "aggregation": "sum",
+    "limit": 1000,
+    "analysis_type": "mom",
+    "compare_periods": []
+  },
+  "schema_tables": ["ads_sales_kpi"],
+  "sql": "SELECT kpi_value AS current_value, mom_growth AS growth_rate FROM ads_sales_kpi WHERE kpi_name = 'GMV' AND stat_date = LAST_DAY(CURRENT_DATE) ORDER BY stat_date DESC LIMIT 1",
+  "explanation": "从销售KPI指标表直接读取GMV的环比增长率，该指标已预计算"
+}

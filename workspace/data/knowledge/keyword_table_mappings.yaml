@@ -1,0 +1,27 @@
+# 关键词到表的硬映射兜底
+# 当用户查询包含特定关键词时，强制召回对应表（即使向量召回未返回）
+
+mappings:
+  - keywords: ["留存率", "次日留存", "7日留存", "30日留存", "cohort", "用户留存"]
+    table: "ads_user_retention"
+
+  - keywords: ["日活", "DAU", "活跃用户", "新增用户", "用户增长", "累计用户"]
+    table: "dws_user_stats"
+
+  - keywords: ["类目排名", "品类排名", "类目排行", "类目GMV排名", "品类份额"]
+    table: "ads_category_rank"
+
+  - keywords: ["地区排名", "省份排名", "城市排名", "区域销售", "地区排行", "市场份额"]
+    table: "ads_region_rank"
+
+  - keywords: ["销售KPI", "客单价", "转化率", "核心指标", "经营指标", "业绩"]
+    table: "ads_sales_kpi"
+
+  - keywords: ["订单明细", "交易明细", "订单宽表", "销售明细"]
+    table: "dwd_order_detail"
+
+  - keywords: ["日销售", "日报", "每日统计", "日汇总"]
+    table: "dws_sales_daily"
+
+  - keywords: ["月销售", "月报", "每月统计", "月汇总"]
+    table: "dws_sales_monthly"

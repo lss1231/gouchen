@@ -60,7 +60,14 @@ def detect_ambiguities(
     ambiguities = []
 
     # Check if query contains metric keywords
-    metric_keywords = ["销售额", "销售", "订单", "收入", "gmv", "利润", "成本", "用户", "客户"]
+    metric_keywords = [
+        "销售额", "销售", "订单", "收入", "gmv", "利润", "成本", "用户", "客户",
+        "采购", "库存", "仓库", "出入库", "周转", "缺货", "供应商",
+        "支付", "工单", "ticket", "NPS", "MRR", "ARR", "LTV",
+        "留存", "流失", "订阅", "转化", "SKU", "商品", "类目",
+        "渠道", "营销", "花费", "ROI", "CAC", "DAU", "活跃",
+        "会员", "客单价", "金额", "数量", "评分", "健康度",
+    ]
     has_metric_keyword = any(kw in query for kw in metric_keywords)
 
     # 1. Detect missing metric
@@ -68,7 +75,7 @@ def detect_ambiguities(
     metrics = intent.get("metrics", [])
     has_metrics = bool(metrics)
     # If query is very vague (like "最近的情况"), we need clarification even if intent has defaults
-    is_vague_query = not has_metric_keyword and len(query) < 10
+    is_vague_query = not has_metric_keyword and len(query) <= 4
 
     # Check if already clarified first
     if not _is_field_clarified("metric", clarification_history):
@@ -92,9 +99,17 @@ def detect_ambiguities(
         has_specific_metric = any(pattern in query for pattern in specific_time_patterns)
 
         if not has_specific_metric and (not time_type or time_type == "last_30_days"):
-            # Check for fuzzy time words
+            # Check for fuzzy time words, but exclude queries with explicit time quantifiers
             fuzzy_time_words = ["最近", "近期", "前段时间"]
-            if any(word in query for word in fuzzy_time_words):
+            explicit_time_quantifiers = [
+                "7天", "7日", "30天", "一个月", "一周", "一年",
+                "本月", "上月", "本季度", "上季度", "今年", "去年",
+                "昨天", "前天", "明天", "后天",
+            ]
+            has_fuzzy_time = any(word in query for word in fuzzy_time_words)
+            has_explicit_time = any(q in query for q in explicit_time_quantifiers)
+
+            if has_fuzzy_time and not has_explicit_time:
                 ambiguities.append({
                     "type": "ambiguous_time",
                     "field": "time",

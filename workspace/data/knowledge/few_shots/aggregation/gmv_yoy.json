@@ -1,0 +1,19 @@
+{
+  "category": "aggregation",
+  "tags": ["gmv", "yoy", "growth", "同比"],
+  "query": "今年Q1销售额同比增长率",
+  "intent": {
+    "metrics": ["销售额", "同比增长率"],
+    "resolved_metrics": ["gmv", "yoy_growth"],
+    "dimensions": [],
+    "filters": [],
+    "time_range": {"type": "specific_quarter", "quarter": "2024-Q1"},
+    "aggregation": "sum",
+    "limit": 1000,
+    "analysis_type": "yoy",
+    "compare_periods": []
+  },
+  "schema_tables": ["ads_sales_kpi"],
+  "sql": "SELECT kpi_value AS current_value, yoy_growth AS growth_rate FROM ads_sales_kpi WHERE kpi_name = 'GMV' AND stat_date = '2024-03-31' ORDER BY stat_date DESC LIMIT 1",
+  "explanation": "从销售KPI指标表读取Q1末GMV的同比增长率，该指标已预计算"
+}

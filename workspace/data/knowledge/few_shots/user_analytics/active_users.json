@@ -1,0 +1,19 @@
+{
+  "category": "user_analytics",
+  "tags": ["dau", "active_users", "trend"],
+  "query": "近30天日活跃用户趋势",
+  "intent": {
+    "metrics": ["日活跃用户"],
+    "resolved_metrics": ["active_users"],
+    "dimensions": ["stat_date"],
+    "filters": [],
+    "time_range": {"type": "last_30_days", "days": 30},
+    "aggregation": "sum",
+    "limit": 1000,
+    "analysis_type": "single",
+    "compare_periods": []
+  },
+  "schema_tables": ["dws_user_stats"],
+  "sql": "SELECT stat_date, SUM(active_users) AS dau FROM dws_user_stats WHERE stat_date >= DATE_SUB(CURRENT_DATE, 30) GROUP BY stat_date ORDER BY stat_date",
+  "explanation": "从用户统计表汇总近30天每日活跃用户数（DAU）"
+}

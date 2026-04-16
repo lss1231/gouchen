@@ -15,8 +15,10 @@ def schema_node(state: Dict[str, Any]) -> Dict[str, Any]:
     schema_store = get_schema_store()
     permission_service = get_permission_service()
 
-    # Retrieve relevant tables based on query
-    relevant_tables = schema_store.retrieve(query, top_k=5)
+    # Retrieve relevant tables based on query and resolved metrics
+    intent = state.get("intent", {})
+    resolved_metrics = intent.get("resolved_metrics", [])
+    relevant_tables = schema_store.retrieve(query, top_k=5, resolved_metrics=resolved_metrics)
 
     # Filter tables by user role permissions
     filtered_tables = []
